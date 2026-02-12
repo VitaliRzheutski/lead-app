@@ -12,6 +12,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { NewInspectionPage } from "./pages/NewInspectionPage";
 import { InspectionDetailPage } from "./pages/InspectionDetailPage";
 import { RoomDetailPage } from "./pages/RoomDetailPage";
+import { CalibrationPage } from "./pages/CalibrationPage";
 
 type ProtectedRouteProps = {
   token: string | null;
@@ -78,6 +79,14 @@ function App() {
         element={
           <ProtectedRoute token={token}>
             <NewInspectionPage token={token as string} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inspections/:id/calibration"
+        element={
+          <ProtectedRoute token={token}>
+            <CalibrationPage token={token as string} />
           </ProtectedRoute>
         }
       />

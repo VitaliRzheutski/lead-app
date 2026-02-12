@@ -125,34 +125,48 @@ export function DashboardPage({ token, onLogout }: Props) {
               <ul className="space-y-2">
                 {inspections.map((inspection) => (
                   <li key={inspection.id}>
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/inspections/${inspection.id}`)}
-                      className="w-full text-left rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 hover:border-sky-500/60 hover:bg-slate-900 transition-colors"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-slate-50 truncate">
-                            {inspection.property_address}
-                          </p>
-                          <p className="text-[11px] text-slate-400 truncate">
-                            {inspection.client_name} •{" "}
-                            <span className="font-mono">
-                              {inspection.inspection_date}
-                            </span>
-                          </p>
+                    <div className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 hover:border-slate-700 transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/inspections/${inspection.id}`)}
+                        className="w-full text-left"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-50 truncate">
+                              {inspection.property_address}
+                            </p>
+                            <p className="text-[11px] text-slate-400 truncate">
+                              {inspection.client_name} •{" "}
+                              <span className="font-mono">
+                                {inspection.inspection_date}
+                              </span>
+                            </p>
+                          </div>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                              inspection.status === "completed"
+                                ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
+                                : "bg-amber-500/10 text-amber-300 border border-amber-500/40"
+                            }`}
+                          >
+                            {inspection.status}
+                          </span>
                         </div>
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                            inspection.status === "completed"
-                              ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
-                              : "bg-amber-500/10 text-amber-300 border border-amber-500/40"
-                          }`}
+                      </button>
+                      <div className="mt-2 pt-2 border-t border-slate-800/80 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(`/inspections/${inspection.id}/calibration`);
+                          }}
+                          className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
                         >
-                          {inspection.status}
-                        </span>
+                          Calibration test
+                        </button>
                       </div>
-                    </button>
+                    </div>
                   </li>
                 ))}
               </ul>
