@@ -1,0 +1,24 @@
+# Node / monorepo
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+dist/
+apps/web/dist/
+apps/api/dist/
+
+# Env files and secrets
+.env
+*.env
+apps/api/.env
+apps/web/.env
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
