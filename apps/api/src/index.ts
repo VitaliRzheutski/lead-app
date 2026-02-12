@@ -4,6 +4,7 @@ import cors from "cors";
 import { authRouter } from "./auth";
 import { inspectionsRouter } from "./inspections";
 import { roomsRouter } from "./rooms";
+import { surfacesRouter } from "./surfaces";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.get("/health", (_req: Request, res: Response) => {
 app.use("/auth", authRouter);
 app.use("/inspections", inspectionsRouter);
 app.use("/rooms", roomsRouter);
+app.use("/surfaces", surfacesRouter);
 
 app.use(
   // Basic 404 handler returning a simple JSON error
