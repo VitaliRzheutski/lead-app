@@ -4,6 +4,11 @@ import { requireAuth, AuthenticatedRequest } from "./auth";
 
 interface RoomRow {
   id: string;
+  inspection_id: string;
+  name: string;
+  interior_exterior: string;
+  floor: string;
+  room_name: string;
 }
 
 interface SurfaceRow {
@@ -29,6 +34,52 @@ export const roomsRouter = Router();
 
 roomsRouter.use(requireAuth);
 
+// GET /rooms/:roomId - get room details (ownership enforced)
+roomsRouter.get(
+  "/:roomId",
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized." });
+      return;
+    }
+
+    const roomId = req.params.roomId;
+
+    if (!roomId) {
+      res.status(400).json({ error: "Room id is required." });
+      return;
+    }
+
+    try {
+      const result = await query<RoomRow>(
+        `SELECT id, inspection_id, name, interior_exterior, floor, room_name
+         FROM rooms
+         WHERE id = $1
+           AND inspection_id IN (
+             SELECT id FROM inspections WHERE user_id = $2
+           )`,
+        [roomId, userId]
+      );
+
+      if (result.rows.length === 0) {
+        res.status(404).json({ error: "Room not found." });
+        return;
+      }
+
+      res.status(200).json({ room: result.rows[0] });
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.error(err);
+      }
+
+      res.status(500).json({ error: "Failed to load room." });
+    }
+  }
+);
+
 // GET /rooms/:roomId/surfaces - list surfaces for a room the user owns
 roomsRouter.get(
   "/:roomId/surfaces",
@@ -48,7 +99,7 @@ roomsRouter.get(
     }
 
     try {
-      const room = await query<RoomRow>(
+      const room = await query<{ id: string }>(
         `SELECT id FROM rooms
          WHERE id = $1
            AND inspection_id IN (
@@ -147,7 +198,7 @@ roomsRouter.post(
     }
 
     try {
-      const room = await query<RoomRow>(
+      const room = await query<{ id: string }>(
         `SELECT id FROM rooms
          WHERE id = $1
            AND inspection_id IN (
@@ -231,7 +282,7 @@ roomsRouter.delete(
     }
 
     try {
-      const result = await query<RoomRow>(
+      const result = await query<{ id: string }>(
         `DELETE FROM rooms
          WHERE id = $1
            AND inspection_id IN (

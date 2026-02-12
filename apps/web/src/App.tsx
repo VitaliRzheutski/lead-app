@@ -11,6 +11,7 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { NewInspectionPage } from "./pages/NewInspectionPage";
 import { InspectionDetailPage } from "./pages/InspectionDetailPage";
+import { RoomDetailPage } from "./pages/RoomDetailPage";
 
 type ProtectedRouteProps = {
   token: string | null;
@@ -85,6 +86,14 @@ function App() {
         element={
           <ProtectedRoute token={token}>
             <InspectionDetailPage token={token as string} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rooms/:roomId"
+        element={
+          <ProtectedRoute token={token}>
+            <RoomDetailPage token={token as string} />
           </ProtectedRoute>
         }
       />
