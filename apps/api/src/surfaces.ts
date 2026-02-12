@@ -1,8 +1,38 @@
+import path from "path";
+import crypto from "crypto";
 import { Router, Response } from "express";
+import multer from "multer";
 import { query } from "./db";
 import { requireAuth, AuthenticatedRequest } from "./auth";
 
 const XRF_THRESHOLD = 0.5; // mg/cm²
+
+const uploadsDir = path.join(process.cwd(), "uploads");
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (
+      _req: unknown,
+      _file: unknown,
+      cb: (error: Error | null, destination: string) => void
+    ) => cb(null, uploadsDir),
+    filename: (
+      _req: unknown,
+      file: { originalname: string },
+      cb: (error: Error | null, filename: string) => void
+    ) => {
+      const ext = path.extname(file.originalname) || ".jpg";
+      const name = `${crypto.randomUUID()}${ext}`;
+      cb(null, name);
+    },
+  }),
+});
+
+interface PhotoRow {
+  id: string;
+  surface_id: string;
+  file_url: string;
+  created_at: string;
+}
 
 interface SurfaceRow {
   id: string;
@@ -24,6 +54,73 @@ function computeResult(xrfReading: number): "positive" | "negative" {
 export const surfacesRouter = Router();
 
 surfacesRouter.use(requireAuth);
+
+type RequestWithFile = AuthenticatedRequest & {
+  file?: { filename: string; path: string };
+};
+
+// POST /surfaces/:surfaceId/photos - upload a photo for a surface the user owns
+surfacesRouter.post(
+  "/:surfaceId/photos",
+  upload.single("photo"),
+  async (req: RequestWithFile, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized." });
+      return;
+    }
+
+    const surfaceId = req.params.surfaceId;
+
+    if (!surfaceId) {
+      res.status(400).json({ error: "Surface id is required." });
+      return;
+    }
+
+    if (!req.file) {
+      res.status(400).json({ error: "No file uploaded. Send a multipart field 'photo'." });
+      return;
+    }
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+
+    try {
+      const surface = await query<{ id: string }>(
+        `SELECT id FROM surfaces
+         WHERE id = $1
+           AND room_id IN (
+             SELECT id FROM rooms
+             WHERE inspection_id IN (
+               SELECT id FROM inspections WHERE user_id = $2
+             )
+           )`,
+        [surfaceId, userId]
+      );
+
+      if (surface.rows.length === 0) {
+        res.status(404).json({ error: "Surface not found." });
+        return;
+      }
+
+      const result = await query<PhotoRow>(
+        `INSERT INTO photos (surface_id, file_url)
+         VALUES ($1, $2)
+         RETURNING id, surface_id, file_url, created_at`,
+        [surfaceId, fileUrl]
+      );
+
+      res.status(201).json({ photo: result.rows[0] });
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.error(err);
+      }
+
+      res.status(500).json({ error: "Failed to save photo." });
+    }
+  }
+);
 
 // PATCH /surfaces/:surfaceId - update a surface the user owns
 surfacesRouter.patch(

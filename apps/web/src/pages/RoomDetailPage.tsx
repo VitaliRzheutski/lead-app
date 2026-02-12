@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import React, { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 type Props = {
@@ -23,7 +23,11 @@ type Surface = {
   xrf_reading: number;
   result: string;
   notes: string | null;
+  photo_count?: number;
+  first_photo_url?: string | null;
 };
+
+const API_BASE = "http://localhost:3000";
 
 const COMPONENT_OPTIONS = ["Wall", "Door", "Floor", "Baseboard", "Window", "Closet", "Radiator", "Wall Molding"];
 const SUBSTRATE_OPTIONS = ["Sheetrock", "Wood", "Plaster", "Metal", "Tile"];
@@ -39,6 +43,10 @@ export function RoomDetailPage({ token }: Props) {
   const [isLoadingSurfaces, setIsLoadingSurfaces] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [uploadingSurfaceId, setUploadingSurfaceId] = useState<string | null>(null);
+  const [surfaceIdForPhoto, setSurfaceIdForPhoto] = useState<string | null>(null);
+  const addPhotoInputRef = useRef<HTMLInputElement>(null);
+  const takePhotoInputRef = useRef<HTMLInputElement>(null);
 
   const [component, setComponent] = useState(COMPONENT_OPTIONS[0]);
   const [substrate, setSubstrate] = useState(SUBSTRATE_OPTIONS[0]);
@@ -107,6 +115,58 @@ export function RoomDetailPage({ token }: Props) {
     loadSurfaces();
     return () => { cancelled = true; };
   }, [roomId, token]);
+
+  function handleAddPhotoClick(surfaceId: string) {
+    setSurfaceIdForPhoto(surfaceId);
+    addPhotoInputRef.current?.click();
+  }
+
+  function handleTakePhotoClick(surfaceId: string) {
+    setSurfaceIdForPhoto(surfaceId);
+    takePhotoInputRef.current?.click();
+  }
+
+  async function handlePhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    const surfaceId = surfaceIdForPhoto;
+    setSurfaceIdForPhoto(null);
+    event.target.value = "";
+    if (!file || !surfaceId) return;
+
+    setUploadingSurfaceId(surfaceId);
+    try {
+      const formData = new FormData();
+      formData.append("photo", file);
+      const response = await fetch(
+        `http://localhost:3000/surfaces/${surfaceId}/photos`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        setFormError(data?.error ?? "Failed to upload photo.");
+        return;
+      }
+      setSurfaces((prev) =>
+        prev.map((s) =>
+          s.id === surfaceId
+            ? {
+                ...s,
+                photo_count: (s.photo_count ?? 0) + 1,
+                first_photo_url: s.first_photo_url ?? data.photo?.file_url ?? null,
+              }
+            : s
+        )
+      );
+    } catch (_err) {
+      setFormError("Unable to reach the server.");
+    } finally {
+      setUploadingSurfaceId(null);
+    }
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -317,6 +377,23 @@ export function RoomDetailPage({ token }: Props) {
               </form>
             </div>
 
+            <input
+              ref={addPhotoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoChange}
+              aria-hidden
+            />
+            <input
+              ref={takePhotoInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handlePhotoChange}
+              aria-hidden
+            />
             <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
               <h3 className="text-sm font-semibold text-slate-100 px-4 py-3 border-b border-slate-800">
                 Surfaces
@@ -357,6 +434,9 @@ export function RoomDetailPage({ token }: Props) {
                         <th className="px-3 py-2.5 font-medium text-slate-300">
                           Equivalent
                         </th>
+                        <th className="px-3 py-2.5 font-medium text-slate-300 min-w-[11rem]">
+                          Photos
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -393,6 +473,43 @@ export function RoomDetailPage({ token }: Props) {
                           </td>
                           <td className="px-3 py-2.5 text-slate-300 text-xs max-w-[120px] truncate">
                             {s.room_equivalent}
+                          </td>
+                          <td className="px-3 py-2.5 min-w-[11rem]">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {s.first_photo_url ? (
+                                <a
+                                  href={`${API_BASE}${s.first_photo_url}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex-shrink-0"
+                                >
+                                  <img
+                                    src={`${API_BASE}${s.first_photo_url}`}
+                                    alt=""
+                                    className="w-8 h-8 object-cover rounded border border-slate-700"
+                                  />
+                                </a>
+                              ) : null}
+                              <span className="text-slate-400 text-xs font-mono">
+                                {s.photo_count ?? 0}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={uploadingSurfaceId === s.id}
+                                onClick={() => handleTakePhotoClick(s.id)}
+                                className="text-[11px] font-medium text-sky-400 hover:text-sky-300 disabled:opacity-60 touch-manipulation"
+                              >
+                                {uploadingSurfaceId === s.id ? "…" : "Take photo"}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={uploadingSurfaceId === s.id}
+                                onClick={() => handleAddPhotoClick(s.id)}
+                                className="text-[11px] font-medium text-slate-400 hover:text-slate-300 disabled:opacity-60 touch-manipulation"
+                              >
+                                Add photo
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}

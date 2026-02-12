@@ -22,6 +22,8 @@ interface SurfaceRow {
   xrf_reading: number;
   result: string;
   notes: string | null;
+  photo_count: number;
+  first_photo_url: string | null;
 }
 
 const XRF_THRESHOLD = 0.5; // mg/cm²
@@ -115,19 +117,21 @@ roomsRouter.get(
 
       const result = await query<SurfaceRow>(
         `SELECT
-           id,
-           room_id,
-           room_side,
-           room_code,
-           room_equivalent,
-           component,
-           substrate,
-           xrf_reading,
-           result,
-           notes
-         FROM surfaces
-         WHERE room_id = $1
-         ORDER BY room_side ASC, component ASC`,
+           s.id,
+           s.room_id,
+           s.room_side,
+           s.room_code,
+           s.room_equivalent,
+           s.component,
+           s.substrate,
+           s.xrf_reading,
+           s.result,
+           s.notes,
+           (SELECT COUNT(*)::int FROM photos WHERE photos.surface_id = s.id) AS photo_count,
+           (SELECT file_url FROM photos WHERE photos.surface_id = s.id ORDER BY created_at ASC LIMIT 1) AS first_photo_url
+         FROM surfaces s
+         WHERE s.room_id = $1
+         ORDER BY s.room_side ASC, s.component ASC`,
         [roomId]
       );
 

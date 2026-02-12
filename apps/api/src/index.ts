@@ -1,3 +1,5 @@
+import path from "path";
+import fs from "fs";
 import dotenv from "dotenv";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
@@ -11,6 +13,9 @@ dotenv.config();
 
 const app = express();
 
+const uploadsDir = path.join(process.cwd(), "uploads");
+fs.mkdirSync(uploadsDir, { recursive: true });
+
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -19,6 +24,8 @@ app.use(
 );
 
 app.use(express.json());
+
+app.use("/uploads", express.static(uploadsDir));
 
 app.get("/health", (_req: Request, res: Response) => {
   res.status(200).json({ ok: true });
