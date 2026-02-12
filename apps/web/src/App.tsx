@@ -9,6 +9,8 @@ import { getToken } from "./auth";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { NewInspectionPage } from "./pages/NewInspectionPage";
+import { InspectionDetailPage } from "./pages/InspectionDetailPage";
 
 type ProtectedRouteProps = {
   token: string | null;
@@ -66,7 +68,23 @@ function App() {
         path="/dashboard"
         element={
           <ProtectedRoute token={token}>
-            <DashboardPage onLogout={handleLogout} />
+            <DashboardPage token={token as string} onLogout={handleLogout} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inspections/new"
+        element={
+          <ProtectedRoute token={token}>
+            <NewInspectionPage token={token as string} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inspections/:id"
+        element={
+          <ProtectedRoute token={token}>
+            <InspectionDetailPage token={token as string} />
           </ProtectedRoute>
         }
       />
