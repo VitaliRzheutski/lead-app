@@ -55,7 +55,18 @@ export function CalibrationPage({ token }: Props) {
   const [calibrationTiming, setCalibrationTiming] = useState(TIMING_OPTIONS[0].value);
   const [timeOfCalibration, setTimeOfCalibration] = useState("12:00");
   const [xrfReading, setXrfReading] = useState("");
-  const [calibrationBlockBenchmark, setCalibrationBlockBenchmark] = useState("");
+
+  const BENCHMARK_1 = 1.0;
+  const BENCHMARK_0 = 0;
+  const ROWS_PER_BLOCK = 6;
+  const entriesBenchmark1 = entries.filter(
+    (e) => Number(e.calibration_block_benchmark) === BENCHMARK_1
+  );
+  const entriesBenchmark0 = entries.filter(
+    (e) => Number(e.calibration_block_benchmark) === BENCHMARK_0
+  );
+  const rows1 = Array.from({ length: ROWS_PER_BLOCK }, (_, i) => entriesBenchmark1[i] ?? null);
+  const rows0 = Array.from({ length: ROWS_PER_BLOCK }, (_, i) => entriesBenchmark0[i] ?? null);
 
   useEffect(() => {
     if (!inspectionId) {
@@ -124,22 +135,12 @@ export function CalibrationPage({ token }: Props) {
     }
   }
 
-  async function handleAddEntry(event: FormEvent) {
-    event.preventDefault();
+  async function handleAddEntry(benchmark: number) {
     if (!inspectionId || !calibration) return;
     setFormError(null);
     const readingNum = Number(xrfReading);
-    const benchmarkNum = Number(calibrationBlockBenchmark);
     if (xrfReading === "" || !Number.isFinite(readingNum) || readingNum < 0) {
       setFormError("XRF reading must be a valid non-negative number.");
-      return;
-    }
-    if (
-      calibrationBlockBenchmark === "" ||
-      !Number.isFinite(benchmarkNum) ||
-      benchmarkNum < 0
-    ) {
-      setFormError("Calibration block benchmark must be a valid non-negative number.");
       return;
     }
     setIsSubmitting(true);
@@ -158,7 +159,7 @@ export function CalibrationPage({ token }: Props) {
             calibration_timing: calibrationTiming,
             time_of_calibration: timeValue,
             xrf_reading: readingNum,
-            calibration_block_benchmark: benchmarkNum,
+            calibration_block_benchmark: benchmark,
           }),
         }
       );
@@ -174,7 +175,6 @@ export function CalibrationPage({ token }: Props) {
         newReadings.reduce((a, b) => a + b, 0) / newReadings.length
       );
       setXrfReading("");
-      setCalibrationBlockBenchmark("");
     } catch (_err) {
       setFormError("Unable to reach the server.");
     } finally {
@@ -252,7 +252,7 @@ export function CalibrationPage({ token }: Props) {
             )}
 
             <form
-              onSubmit={handleAddEntry}
+              onSubmit={(e) => e.preventDefault()}
               className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3"
             >
               <h3 className="text-sm font-semibold text-slate-100">
@@ -287,120 +287,143 @@ export function CalibrationPage({ token }: Props) {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-200 mb-1">
-                    XRF reading (mg/cm²)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={xrfReading}
-                    onChange={(e) => setXrfReading(e.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 touch-manipulation"
-                    placeholder="e.g. 1.00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-200 mb-1">
-                    Calibration block benchmark
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={calibrationBlockBenchmark}
-                    onChange={(e) => setCalibrationBlockBenchmark(e.target.value)}
-                    className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 touch-manipulation"
-                    placeholder="e.g. 1.03"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-200 mb-1">
+                  XRF reading (mg/cm²)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={xrfReading}
+                  onChange={(e) => setXrfReading(e.target.value)}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 touch-manipulation"
+                  placeholder="e.g. 1.00"
+                />
               </div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full inline-flex items-center justify-center rounded-lg bg-sky-500 px-3 py-3 text-sm font-medium text-slate-950 hover:bg-sky-400 disabled:opacity-70 touch-manipulation"
-              >
-                {isSubmitting ? "Adding..." : "Add entry"}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleAddEntry(BENCHMARK_1)}
+                  disabled={isSubmitting}
+                  className="flex-1 inline-flex items-center justify-center rounded-lg bg-sky-500 px-3 py-3 text-sm font-medium text-slate-950 hover:bg-sky-400 disabled:opacity-70 touch-manipulation"
+                >
+                  {isSubmitting ? "Adding..." : "Add to Benchmark 1.0"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleAddEntry(BENCHMARK_0)}
+                  disabled={isSubmitting}
+                  className="flex-1 inline-flex items-center justify-center rounded-lg border border-slate-600 px-3 py-3 text-sm font-medium text-slate-200 hover:bg-slate-800 disabled:opacity-70 touch-manipulation"
+                >
+                  {isSubmitting ? "Adding..." : "Add to Benchmark 0"}
+                </button>
+              </div>
             </form>
 
-            <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-100">
-                  Calibration entries
-                </h3>
-                {displayAverage !== null && (
-                  <span className="text-sm font-medium text-slate-200">
-                    Average:{" "}
-                    <span className="font-mono text-slate-50">
-                      {displayAverage.toFixed(2)} mg/cm²
-                    </span>
+            {displayAverage !== null && (
+              <div className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-center">
+                <span className="text-sm font-medium text-slate-200">
+                  Average:{" "}
+                  <span className="font-mono text-slate-50">
+                    {displayAverage.toFixed(2)} mg/cm²
                   </span>
-                )}
+                </span>
               </div>
-              {entries.length === 0 ? (
-                <p className="text-xs text-slate-400 px-4 py-3">
-                  No entries yet. Add one above.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-800 bg-slate-950/50">
-                        <th className="px-3 py-2.5 font-medium text-slate-300 w-8">
-                          #
-                        </th>
-                        <th className="px-3 py-2.5 font-medium text-slate-300">
-                          Timing
-                        </th>
-                        <th className="px-3 py-2.5 font-medium text-slate-300">
-                          Time
-                        </th>
-                        <th className="px-3 py-2.5 font-medium text-slate-300">
-                          XRF (mg/cm²)
-                        </th>
-                        <th className="px-3 py-2.5 font-medium text-slate-300">
-                          Benchmark
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {entries.map((entry, idx) => (
-                        <tr
-                          key={entry.id}
-                          className={`border-b border-slate-800/80 ${
-                            entry.calibration_timing === "before_inspection"
+            )}
+
+            <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+              <h3 className="text-sm font-semibold text-slate-100 px-4 py-3 border-b border-slate-800 bg-slate-950/50">
+                Calibration block benchmark 1.0
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-800 bg-slate-950/50">
+                      <th className="px-3 py-2.5 font-medium text-slate-300 w-8">#</th>
+                      <th className="px-3 py-2.5 font-medium text-slate-300">Timing</th>
+                      <th className="px-3 py-2.5 font-medium text-slate-300">Time</th>
+                      <th className="px-3 py-2.5 font-medium text-slate-300">XRF (mg/cm²)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows1.map((entry, idx) => (
+                      <tr
+                        key={entry?.id ?? `empty-1-${idx}`}
+                        className={`border-b border-slate-800/80 ${
+                          entry
+                            ? entry.calibration_timing === "before_inspection"
                               ? "bg-amber-500/5"
                               : "bg-emerald-500/5"
-                          }`}
-                        >
-                          <td className="px-3 py-2.5 text-slate-300 font-mono">
-                            {idx + 1}
-                          </td>
-                          <td className="px-3 py-2.5 text-slate-200">
-                            {entry.calibration_timing === "before_inspection"
-                              ? "Before Inspection"
-                              : "After Inspection"}
-                          </td>
-                          <td className="px-3 py-2.5 text-slate-200 font-mono text-xs">
-                            {formatTime(entry.time_of_calibration)}
-                          </td>
-                          <td className="px-3 py-2.5 text-slate-200 font-mono">
-                            {Number(entry.xrf_reading).toFixed(2)}
-                          </td>
-                          <td className="px-3 py-2.5 text-slate-200 font-mono">
-                            {Number(entry.calibration_block_benchmark).toFixed(
-                              2
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                            : "bg-slate-900/50"
+                        }`}
+                      >
+                        <td className="px-3 py-2.5 text-slate-300 font-mono">{idx + 1}</td>
+                        <td className="px-3 py-2.5 text-slate-200">
+                          {entry
+                            ? entry.calibration_timing === "before_inspection"
+                              ? "Before"
+                              : "After"
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-slate-200 font-mono text-xs">
+                          {entry ? formatTime(entry.time_of_calibration) : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-slate-200 font-mono">
+                          {entry ? Number(entry.xrf_reading).toFixed(2) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+              <h3 className="text-sm font-semibold text-slate-100 px-4 py-3 border-b border-slate-800 bg-slate-950/50">
+                Calibration block benchmark 0
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-800 bg-slate-950/50">
+                      <th className="px-3 py-2.5 font-medium text-slate-300 w-8">#</th>
+                      <th className="px-3 py-2.5 font-medium text-slate-300">Timing</th>
+                      <th className="px-3 py-2.5 font-medium text-slate-300">Time</th>
+                      <th className="px-3 py-2.5 font-medium text-slate-300">XRF (mg/cm²)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows0.map((entry, idx) => (
+                      <tr
+                        key={entry?.id ?? `empty-0-${idx}`}
+                        className={`border-b border-slate-800/80 ${
+                          entry
+                            ? entry.calibration_timing === "before_inspection"
+                              ? "bg-amber-500/5"
+                              : "bg-emerald-500/5"
+                            : "bg-slate-900/50"
+                        }`}
+                      >
+                        <td className="px-3 py-2.5 text-slate-300 font-mono">{idx + 1}</td>
+                        <td className="px-3 py-2.5 text-slate-200">
+                          {entry
+                            ? entry.calibration_timing === "before_inspection"
+                              ? "Before"
+                              : "After"
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-slate-200 font-mono text-xs">
+                          {entry ? formatTime(entry.time_of_calibration) : "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-slate-200 font-mono">
+                          {entry ? Number(entry.xrf_reading).toFixed(2) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </>
         )}
