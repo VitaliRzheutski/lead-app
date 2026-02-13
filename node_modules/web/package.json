@@ -1,0 +1,27 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "*",
+    "react-dom": "*",
+    "react-router-dom": "*"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/react": "*",
+    "@types/react-dom": "*",
+    "@types/react-router-dom": "*",
+    "@vitejs/plugin-react": "^5.1.4",
+    "autoprefixer": "*",
+    "postcss": "*",
+    "tailwindcss": "*",
+    "typescript": "*",
+    "vite": "*"
+  }
+}
