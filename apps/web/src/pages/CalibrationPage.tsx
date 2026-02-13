@@ -46,7 +46,6 @@ export function CalibrationPage({ token }: Props) {
   const { id: inspectionId } = useParams<{ id: string }>();
   const [calibration, setCalibration] = useState<Calibration | null>(null);
   const [entries, setEntries] = useState<CalibrationEntry[]>([]);
-  const [average, setAverage] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -91,7 +90,6 @@ export function CalibrationPage({ token }: Props) {
         if (!cancelled) {
           setCalibration(data.calibration ?? null);
           setEntries(data.entries ?? []);
-          setAverage(data.average ?? null);
         }
       } catch (_err) {
         if (!cancelled) setError("Unable to reach the server.");
@@ -127,7 +125,6 @@ export function CalibrationPage({ token }: Props) {
       }
       setCalibration(data.calibration);
       setEntries([]);
-      setAverage(null);
     } catch (_err) {
       setFormError("Unable to reach the server.");
     } finally {
@@ -168,12 +165,7 @@ export function CalibrationPage({ token }: Props) {
         setFormError(data?.error ?? "Failed to add entry.");
         return;
       }
-      const newEntries = [...entries, data.entry];
-      setEntries(newEntries);
-      const newReadings = newEntries.map((e) => Number(e.xrf_reading));
-      setAverage(
-        newReadings.reduce((a, b) => a + b, 0) / newReadings.length
-      );
+      setEntries([...entries, data.entry]);
       setXrfReading("");
     } catch (_err) {
       setFormError("Unable to reach the server.");
@@ -182,8 +174,22 @@ export function CalibrationPage({ token }: Props) {
     }
   }
 
-  const displayAverage =
-    average !== null ? Math.round(average * 100) / 100 : null;
+  const average1 =
+    entriesBenchmark1.length > 0
+      ? Math.round(
+          (entriesBenchmark1.reduce((s, e) => s + Number(e.xrf_reading), 0) /
+            entriesBenchmark1.length) *
+            100
+        ) / 100
+      : null;
+  const average0 =
+    entriesBenchmark0.length > 0
+      ? Math.round(
+          (entriesBenchmark0.reduce((s, e) => s + Number(e.xrf_reading), 0) /
+            entriesBenchmark0.length) *
+            100
+        ) / 100
+      : null;
   const dateTitle = calibration?.calibration_date
     ? new Date(calibration.calibration_date + "Z").toLocaleDateString("en-US", {
         month: "numeric",
@@ -321,21 +327,20 @@ export function CalibrationPage({ token }: Props) {
               </div>
             </form>
 
-            {displayAverage !== null && (
-              <div className="rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-center">
-                <span className="text-sm font-medium text-slate-200">
-                  Average:{" "}
-                  <span className="font-mono text-slate-50">
-                    {displayAverage.toFixed(2)} mg/cm²
-                  </span>
-                </span>
-              </div>
-            )}
-
             <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
-              <h3 className="text-sm font-semibold text-slate-100 px-4 py-3 border-b border-slate-800 bg-slate-950/50">
-                Calibration block benchmark 1.0
-              </h3>
+              <div className="px-4 py-3 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-100">
+                  Calibration block benchmark 1.0
+                </h3>
+                {average1 !== null && (
+                  <span className="text-sm font-medium text-slate-200">
+                    Average:{" "}
+                    <span className="font-mono text-slate-50">
+                      {average1.toFixed(2)} mg/cm²
+                    </span>
+                  </span>
+                )}
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead>
@@ -380,9 +385,19 @@ export function CalibrationPage({ token }: Props) {
             </div>
 
             <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
-              <h3 className="text-sm font-semibold text-slate-100 px-4 py-3 border-b border-slate-800 bg-slate-950/50">
-                Calibration block benchmark 0
-              </h3>
+              <div className="px-4 py-3 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-100">
+                  Calibration block benchmark 0
+                </h3>
+                {average0 !== null && (
+                  <span className="text-sm font-medium text-slate-200">
+                    Average:{" "}
+                    <span className="font-mono text-slate-50">
+                      {average0.toFixed(2)} mg/cm²
+                    </span>
+                  </span>
+                )}
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead>
