@@ -1,6 +1,12 @@
 import { Router, Response } from "express";
 import { query } from "./db";
 import { requireAuth, AuthenticatedRequest } from "./auth";
+import {
+  loadReportData,
+  renderReportHtml,
+  generatePdfBytesFromHtml,
+  storeReportPdf,
+} from "./report";
 
 interface InspectionRow {
   id: string;
@@ -405,6 +411,48 @@ inspectionsRouter.post(
     } catch (err) {
       if (process.env.NODE_ENV !== "production") console.error(err);
       res.status(500).json({ error: "Failed to add calibration entry." });
+    }
+  }
+);
+
+inspectionsRouter.post(
+  "/:id/report",
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized." });
+      return;
+    }
+    const inspectionId = req.params.id;
+    if (!inspectionId) {
+      res.status(400).json({ error: "Inspection id is required." });
+      return;
+    }
+    try {
+      const data = await loadReportData(inspectionId, userId);
+      if (!data.inspection) {
+        res.status(404).json({ error: "Inspection not found." });
+        return;
+      }
+      const html = renderReportHtml(data);
+      const pdfBytes = await generatePdfBytesFromHtml(html);
+      const timestamp = Date.now();
+      const objectKey = `inspections/${inspectionId}/reports/${timestamp}_report.pdf`;
+      const { publicUrl } = storeReportPdf(objectKey, pdfBytes);
+      const baseUrl = process.env.API_BASE_URL || "http://localhost:3000";
+      const fullReportUrl = publicUrl.startsWith("http") ? publicUrl : `${baseUrl}${publicUrl}`;
+      res.status(201).json({
+        reportId: String(timestamp),
+        status: "ready",
+        report_url: fullReportUrl,
+        publicUrl: fullReportUrl,
+      });
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.error(err);
+      }
+      res.status(500).json({ error: "Failed to generate report." });
     }
   }
 );
