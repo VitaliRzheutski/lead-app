@@ -211,25 +211,25 @@ function renderMainReportHtml(
   for (const s of surfaces) {
     if (s.room_name !== lastRoom) {
       bodyRows.push(
-        `<tr class="section"><td colspan="14" class="section-header">${escapeHtml(s.room_name)}</td></tr>`
+        `<tr class="section"><td colspan="13" class="section-header">${escapeHtml(s.room_name)}</td></tr>`
       );
       lastRoom = s.room_name;
     }
     rowNum += 1;
+    const resultClass = String(s.result).toLowerCase() === "positive" ? "result-positive" : "result-negative";
     bodyRows.push(`<tr>
-      <td>${rowNum}</td>
+      <td class="cell-num">${rowNum}</td>
       <td>${escapeHtml(s.interior_exterior)}</td>
-      <td>${escapeHtml(s.floor)}</td>
+      <td class="cell-num">${escapeHtml(s.floor)}</td>
       <td>${escapeHtml(s.room_side)}</td>
-      <td>${escapeHtml(s.room_code ?? "")}</td>
-      <td>${escapeHtml(s.room_code ?? "")}</td>
+      <td class="cell-num">${escapeHtml(s.room_code ?? "")}</td>
       <td>${escapeHtml(s.room_equivalent)}</td>
       <td>${escapeHtml(s.component)}</td>
       <td>${escapeHtml(s.substrate)}</td>
-      <td>${Number(s.xrf_reading).toFixed(1)}</td>
-      <td>${escapeHtml(s.result)}</td>
+      <td class="cell-num">${Number(s.xrf_reading).toFixed(1)}</td>
+      <td class="${resultClass}">${escapeHtml(s.result)}</td>
       <td>${escapeHtml(s.room_name)}</td>
-      <td>${s.photo_count}</td>
+      <td class="cell-num">${s.photo_count}</td>
       <td>${escapeHtml(s.notes ?? "")}</td>
     </tr>`);
     picturesTotal += s.photo_count;
@@ -243,7 +243,6 @@ function renderMainReportHtml(
     "Floor",
     "Room Side",
     "Room #",
-    "Code",
     "Room Equivalent",
     "Component",
     "Substrate",
@@ -265,6 +264,21 @@ function renderMainReportHtml(
     <div class="meta-line">Type: ${escapeHtml(inspection.inspection_type)}</div>
   </div>
   <table class="report-table">
+    <colgroup>
+      <col class="col-num" />
+      <col class="col-int" />
+      <col class="col-floor" />
+      <col class="col-side" />
+      <col class="col-roomno" />
+      <col class="col-equiv" />
+      <col class="col-component" />
+      <col class="col-substrate" />
+      <col class="col-xrf" />
+      <col class="col-result" />
+      <col class="col-roomname" />
+      <col class="col-pics" />
+      <col class="col-notes" />
+    </colgroup>
     <thead><tr>${headerCells}</tr></thead>
     <tbody>${bodyRows.join("")}</tbody>
   </table>
@@ -301,14 +315,31 @@ export function renderReportHtml(data: {
     .calibration-section { margin-bottom: 20px; }
     .calibration-title { font-size: 16px; margin: 0 0 10px 0; }
     .calibration-table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
-    .calibration-table th, .calibration-table td { border: 1px solid #000; padding: 5px 8px; text-align: left; }
+    .calibration-table th, .calibration-table td { border: 1px solid #000; padding: 6px 10px; text-align: left; }
     .calibration-table th { background: #d9d9d9; font-weight: 600; }
     .report-title { font-size: 18px; margin: 16px 0 8px 0; }
-    .report-meta { font-size: 11px; color: #444; margin-bottom: 12px; }
-    .report-table { border-collapse: collapse; width: 100%; }
-    .report-table th, .report-table td { border: 1px solid #000; padding: 5px 8px; }
-    .report-table th { background: #d9d9d9; font-weight: 600; }
-    .report-table tr.section .section-header { background: #bfbfbf; font-weight: 600; }
+    .report-meta { font-size: 11px; color: #444; margin-bottom: 14px; }
+    .report-table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+    .report-table th, .report-table td { border: 1px solid #000; padding: 8px 10px; }
+    .report-table th { background: #404040; color: #fff; font-weight: 700; text-align: center; white-space: normal; word-wrap: break-word; font-size: 10px; line-height: 1.2; }
+    .report-table td { text-align: left; }
+    .report-table td.cell-num { text-align: center; }
+    .report-table .col-num { width: 3.5%; }
+    .report-table .col-int { width: 8%; }
+    .report-table .col-floor { width: 6%; }
+    .report-table .col-side { width: 8%; }
+    .report-table .col-roomno { width: 5%; }
+    .report-table .col-equiv { width: 12%; }
+    .report-table .col-component { width: 8%; }
+    .report-table .col-substrate { width: 8%; }
+    .report-table .col-xrf { width: 10%; }
+    .report-table .col-result { width: 8%; }
+    .report-table td.result-positive { background: #dc2626; color: #fff; font-weight: 600; }
+    .report-table td.result-negative { background: #16a34a; color: #fff; font-weight: 600; }
+    .report-table .col-roomname { width: 8%; }
+    .report-table .col-pics { width: 5%; }
+    .report-table .col-notes { width: 11%; }
+    .report-table tr.section .section-header { background: #404040; color: #fff; font-weight: 700; border-bottom: 2px solid #000; padding: 8px 12px; text-align: left; }
     .report-summary { margin-top: 16px; }
     .summary-table { border-collapse: collapse; }
     .summary-table th, .summary-table td { border: 1px solid #000; padding: 6px 10px; background: #f2f2f2; }
@@ -332,6 +363,7 @@ export async function generatePdfBytesFromHtml(html: string): Promise<Buffer> {
     await page.setContent(html, { waitUntil: "networkidle0", timeout: 30000 });
     const pdfBytes = await page.pdf({
       format: "letter",
+      landscape: true,
       margin: { top: "0.5in", right: "0.5in", bottom: "0.5in", left: "0.5in" },
       printBackground: true,
     });

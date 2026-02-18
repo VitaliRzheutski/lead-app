@@ -1,3 +1,5 @@
+import path from "path";
+import fs from "fs";
 import { Router, Response } from "express";
 import { query } from "./db";
 import { requireAuth, AuthenticatedRequest } from "./auth";
@@ -438,14 +440,14 @@ inspectionsRouter.post(
       const pdfBytes = await generatePdfBytesFromHtml(html);
       const timestamp = Date.now();
       const objectKey = `inspections/${inspectionId}/reports/${timestamp}_report.pdf`;
-      const { publicUrl } = storeReportPdf(objectKey, pdfBytes);
+      storeReportPdf(objectKey, pdfBytes);
       const baseUrl = process.env.API_BASE_URL || "http://localhost:3000";
-      const fullReportUrl = publicUrl.startsWith("http") ? publicUrl : `${baseUrl}${publicUrl}`;
+      const downloadUrl = `${baseUrl}/inspections/${inspectionId}/reports/${timestamp}/download`;
       res.status(201).json({
         reportId: String(timestamp),
         status: "ready",
-        report_url: fullReportUrl,
-        publicUrl: fullReportUrl,
+        report_url: downloadUrl,
+        publicUrl: downloadUrl,
       });
     } catch (err) {
       if (process.env.NODE_ENV !== "production") {
@@ -453,6 +455,66 @@ inspectionsRouter.post(
         console.error(err);
       }
       res.status(500).json({ error: "Failed to generate report." });
+    }
+  }
+);
+
+inspectionsRouter.get(
+  "/:id/reports/:reportId/download",
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized." });
+      return;
+    }
+    const inspectionId = req.params.id;
+    const reportId = req.params.reportId;
+    if (!inspectionId || !reportId) {
+      res.status(400).json({ error: "Inspection id and report id are required." });
+      return;
+    }
+    const reportIdSanitized = reportId.replace(/[^0-9]/g, "");
+    if (reportIdSanitized !== reportId) {
+      res.status(400).json({ error: "Invalid report id." });
+      return;
+    }
+    try {
+      const inspection = await query<{ id: string }>(
+        "SELECT id FROM inspections WHERE id = $1 AND user_id = $2",
+        [inspectionId, userId]
+      );
+      if (!inspection.rows.length) {
+        res.status(404).json({ error: "Inspection not found." });
+        return;
+      }
+      const reportsDir = path.join(process.cwd(), "reports");
+      const filePath = path.join(
+        reportsDir,
+        "inspections",
+        inspectionId,
+        "reports",
+        `${reportId}_report.pdf`
+      );
+      if (!fs.existsSync(filePath)) {
+        res.status(404).json({ error: "Report not found." });
+        return;
+      }
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="Lead-Report-${inspectionId}.pdf"`
+      );
+      res.setHeader("Content-Type", "application/pdf");
+      const stream = fs.createReadStream(filePath);
+      stream.pipe(res);
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.error(err);
+      }
+      res.status(500).json({ error: "Failed to download report." });
     }
   }
 );

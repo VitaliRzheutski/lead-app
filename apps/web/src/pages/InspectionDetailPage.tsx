@@ -52,6 +52,7 @@ export function InspectionDetailPage({ token }: Props) {
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -200,18 +201,52 @@ export function InspectionDetailPage({ token }: Props) {
         return;
       }
       setReportError(null);
+      const reportUrl =
+        data.publicUrl ??
+        data.report_url ??
+        `${API_BASE}/inspections/${id}/reports/${data.reportId}/download`;
       setLatestReport({
-        id: data.reportId,
+        id: String(data.reportId),
         inspection_id: id,
         status: data.status ?? "ready",
-        public_url:
-          data.publicUrl ??
-          `${API_BASE}/api/reports/${data.reportId}/download`,
+        public_url: reportUrl,
       });
     } catch (_err) {
       setReportError("Unable to reach the server. Please try again.");
     } finally {
       setIsGenerating(false);
+    }
+  }
+
+  async function handleDownloadReport() {
+    if (!id || !latestReport?.id) return;
+    setIsDownloading(true);
+    setReportError(null);
+    try {
+      const base =
+        latestReport.public_url?.startsWith("http")
+          ? latestReport.public_url
+          : `${API_BASE}/inspections/${id}/reports/${latestReport.id}/download`;
+      const url = `${base}${base.includes("?") ? "&" : "?"}v=${latestReport.id}`;
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setReportError(data?.error ?? "Failed to download report.");
+        return;
+      }
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `Lead-Report-${id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+    } catch (_err) {
+      setReportError("Unable to download. Please try again.");
+    } finally {
+      setIsDownloading(false);
     }
   }
 
@@ -376,20 +411,14 @@ export function InspectionDetailPage({ token }: Props) {
                   )}
                   {!isLoadingReport && latestReport?.status === "ready" && (
                     <div className="flex flex-wrap gap-2">
-                      <a
-                        href={
-                          latestReport.public_url
-                            ? latestReport.public_url.startsWith("http")
-                              ? latestReport.public_url
-                              : `${API_BASE}${latestReport.public_url}`
-                            : `${API_BASE}/api/reports/${latestReport.id}/download`
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center rounded-lg bg-emerald-500 px-2.5 py-1.5 text-xs font-medium text-slate-950 hover:bg-emerald-400 transition-colors"
+                      <button
+                        type="button"
+                        onClick={handleDownloadReport}
+                        disabled={isDownloading}
+                        className="inline-flex items-center rounded-lg bg-emerald-500 px-2.5 py-1.5 text-xs font-medium text-slate-950 hover:bg-emerald-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                       >
-                        Download Latest
-                      </a>
+                        {isDownloading ? "Downloading..." : "Download Latest"}
+                      </button>
                       <button
                         type="button"
                         onClick={handleGenerateReport}
