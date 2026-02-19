@@ -1,5 +1,6 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { CalibrationSection } from "../components/CalibrationSection";
 
 type Props = {
   token: string;
@@ -76,6 +77,7 @@ export function InspectionDetailPage({ token }: Props) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [hasCalibration, setHasCalibration] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -171,6 +173,13 @@ export function InspectionDetailPage({ token }: Props) {
       cancelled = true;
     };
   }, [id, token]);
+
+  const handleCalibrationUpdate = useCallback(
+    (data: { calibration: { id: string } | null; entries: unknown[] }) => {
+      setHasCalibration(!!(data.calibration && data.entries.length >= 1));
+    },
+    []
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -462,19 +471,34 @@ export function InspectionDetailPage({ token }: Props) {
                 </div>
               </div>
 
+              {id && (
+                <CalibrationSection
+                  inspectionId={id}
+                  token={token}
+                  apiBase={API_BASE}
+                  onCalibrationUpdate={handleCalibrationUpdate}
+                />
+              )}
+
               <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-slate-100">
                     Rooms
                   </h2>
                   {!showAddForm && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAddForm(true)}
-                      className="inline-flex items-center rounded-lg bg-sky-500 px-2.5 py-1.5 text-xs font-medium text-slate-950 hover:bg-sky-400 transition-colors"
-                    >
-                      + Add room
-                    </button>
+                    hasCalibration ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowAddForm(true)}
+                        className="inline-flex items-center rounded-lg bg-sky-500 px-2.5 py-1.5 text-xs font-medium text-slate-950 hover:bg-sky-400 transition-colors"
+                      >
+                        + Add room
+                      </button>
+                    ) : (
+                      <span className="text-xs text-slate-500">
+                        Complete calibration test first
+                      </span>
+                    )
                   )}
                 </div>
 

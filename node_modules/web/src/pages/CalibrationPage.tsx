@@ -1,10 +1,16 @@
-import { FormEvent, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useParams } from "react-router-dom";
 
 type Props = {
   token: string;
 };
 
+export function CalibrationPage(_props: Props) {
+  const { id } = useParams<{ id: string }>();
+  if (!id) return null;
+  return <Navigate to={`/inspections/${id}`} replace />;
+}
+
+/* Legacy full-page calibration - functionality moved to InspectionDetailPage
 type Calibration = {
   id: string;
   inspection_id: string;
@@ -446,3 +452,4 @@ export function CalibrationPage({ token }: Props) {
     </main>
   );
 }
+*/
