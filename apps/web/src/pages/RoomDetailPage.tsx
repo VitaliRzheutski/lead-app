@@ -30,6 +30,206 @@ type Surface = {
 const API_BASE = "http://localhost:3000";
 
 const COMPONENT_OPTIONS = ["Wall", "Door", "Floor", "Baseboard", "Window", "Closet", "Radiator", "Wall Molding"];
+
+type SurfaceCardProps = {
+  surface: Surface;
+  apiBase: string;
+  isEditing: boolean;
+  isUpdating: boolean;
+  isUploading: boolean;
+  substrateOptions: string[];
+  onEdit: () => void;
+  onCancel: () => void;
+  onSave: (id: string, p: { xrf_reading?: number; result?: string; substrate?: string; notes?: string }) => void;
+  onTakePhoto: (id: string) => void;
+  onAddPhoto: (id: string) => void;
+};
+
+function SurfaceCard({
+  surface,
+  apiBase,
+  isEditing,
+  isUpdating,
+  isUploading,
+  substrateOptions,
+  onEdit,
+  onCancel,
+  onSave,
+  onTakePhoto,
+  onAddPhoto,
+}: SurfaceCardProps) {
+  const [editXrf, setEditXrf] = useState(String(surface.xrf_reading));
+  const [editResult, setEditResult] = useState(surface.result);
+  const [editSubstrate, setEditSubstrate] = useState(surface.substrate);
+  const [editNotes, setEditNotes] = useState(surface.notes ?? "");
+
+  useEffect(() => {
+    if (isEditing) {
+      setEditXrf(String(surface.xrf_reading));
+      setEditResult(surface.result);
+      setEditSubstrate(surface.substrate);
+      setEditNotes(surface.notes ?? "");
+    }
+  }, [isEditing, surface.id, surface.xrf_reading, surface.result, surface.substrate, surface.notes]);
+
+  function handleSave() {
+    const readingNum = Number(editXrf);
+    if (editXrf === "" || !Number.isFinite(readingNum) || readingNum < 0) return;
+    onSave(surface.id, {
+      xrf_reading: readingNum,
+      result: editResult,
+      substrate: editSubstrate,
+      notes: editNotes.trim() || undefined,
+    });
+  }
+
+  if (isEditing) {
+    return (
+      <div className="px-3 py-3 bg-slate-800/50 border-l-2 border-sky-500">
+        <div className="font-medium text-slate-100 text-sm mb-2">
+          {surface.room_equivalent}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-[11px] font-medium text-slate-400 mb-0.5">XRF</label>
+            <input
+              type="number"
+              min={0}
+              step="any"
+              value={editXrf}
+              onChange={(e) => setEditXrf(e.target.value)}
+              className="w-full rounded border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm text-slate-50"
+            />
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-slate-400 mb-0.5">Result</label>
+            <select
+              value={editResult}
+              onChange={(e) => setEditResult(e.target.value)}
+              className="w-full rounded border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm text-slate-50"
+            >
+              <option value="negative">negative</option>
+              <option value="positive">positive</option>
+            </select>
+          </div>
+          <div className="col-span-2">
+            <label className="block text-[11px] font-medium text-slate-400 mb-0.5">Substrate</label>
+            <select
+              value={editSubstrate}
+              onChange={(e) => setEditSubstrate(e.target.value)}
+              className="w-full rounded border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm text-slate-50"
+            >
+              {substrateOptions.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+          <div className="col-span-2">
+            <label className="block text-[11px] font-medium text-slate-400 mb-0.5">Notes</label>
+            <input
+              type="text"
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+              className="w-full rounded border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm text-slate-50 placeholder:text-slate-500"
+              placeholder="Optional"
+            />
+          </div>
+        </div>
+        <div className="flex gap-2 mt-2">
+          <button
+            type="button"
+            disabled={isUpdating}
+            onClick={handleSave}
+            className="rounded bg-sky-500 px-3 py-1.5 text-sm font-medium text-slate-950 hover:bg-sky-400 disabled:opacity-70"
+          >
+            {isUpdating ? "Saving..." : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isUpdating}
+            className="rounded border border-slate-600 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-70"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-3 py-2.5 hover:bg-slate-800/30 transition-colors">
+      <div className="font-medium text-slate-100 text-sm">
+        {surface.room_equivalent}
+      </div>
+      <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-400">
+        <span>{surface.component}</span>
+        <span>·</span>
+        <span>{surface.substrate}</span>
+        <span>·</span>
+        <span>{surface.room_side}</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 mt-2">
+        <span className="font-mono text-slate-200 text-xs">
+          XRF {surface.xrf_reading}
+        </span>
+        <span
+          className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
+            surface.result === "positive"
+              ? "bg-red-500/20 text-red-300"
+              : "bg-emerald-500/20 text-emerald-300"
+          }`}
+        >
+          {surface.result}
+        </span>
+        {surface.notes && (
+          <span className="text-slate-500 text-[11px] italic" title={surface.notes}>
+            📝
+          </span>
+        )}
+        {surface.first_photo_url && (
+          <a
+            href={`${apiBase}${surface.first_photo_url}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              src={`${apiBase}${surface.first_photo_url}`}
+              alt=""
+              className="w-7 h-7 object-cover rounded border border-slate-700 inline-block"
+            />
+          </a>
+        )}
+        <span className="text-slate-500 text-[11px]">
+          {surface.photo_count ?? 0} photo{(surface.photo_count ?? 0) !== 1 ? "s" : ""}
+        </span>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          disabled={isUploading}
+          onClick={() => onTakePhoto(surface.id)}
+          className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
+        >
+          {isUploading ? "…" : "Take photo"}
+        </button>
+        <button
+          type="button"
+          disabled={isUploading}
+          onClick={() => onAddPhoto(surface.id)}
+          className="text-[11px] font-medium text-slate-400 hover:text-slate-300 touch-manipulation"
+        >
+          Add photo
+        </button>
+      </div>
+    </div>
+  );
+}
 const SUBSTRATE_OPTIONS = ["Sheetrock", "Wood", "Plaster", "Metal", "Tile"];
 const ROOM_SIDE_OPTIONS = ["A (front)", "B (left)", "C (back)", "D (right)"];
 
@@ -45,6 +245,8 @@ export function RoomDetailPage({ token }: Props) {
   const [formError, setFormError] = useState<string | null>(null);
   const [uploadingSurfaceId, setUploadingSurfaceId] = useState<string | null>(null);
   const [surfaceIdForPhoto, setSurfaceIdForPhoto] = useState<string | null>(null);
+  const [editingSurfaceId, setEditingSurfaceId] = useState<string | null>(null);
+  const [updatingSurfaceId, setUpdatingSurfaceId] = useState<string | null>(null);
   const addPhotoInputRef = useRef<HTMLInputElement>(null);
   const takePhotoInputRef = useRef<HTMLInputElement>(null);
 
@@ -166,6 +368,40 @@ export function RoomDetailPage({ token }: Props) {
       setFormError("Unable to reach the server.");
     } finally {
       setUploadingSurfaceId(null);
+    }
+  }
+
+  async function handleSurfaceUpdate(
+    surfaceId: string,
+    payload: { xrf_reading?: number; result?: string; substrate?: string; notes?: string }
+  ) {
+    setFormError(null);
+    setUpdatingSurfaceId(surfaceId);
+    try {
+      const response = await fetch(
+        `http://localhost:3000/surfaces/${surfaceId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        setFormError(data?.error ?? "Failed to update surface.");
+        return;
+      }
+      setSurfaces((prev) =>
+        prev.map((s) => (s.id === surfaceId ? { ...s, ...data.surface } : s))
+      );
+      setEditingSurfaceId(null);
+    } catch (_err) {
+      setFormError("Unable to reach the server.");
+    } finally {
+      setUpdatingSurfaceId(null);
     }
   }
 
@@ -420,6 +656,11 @@ export function RoomDetailPage({ token }: Props) {
               <h3 className="text-sm font-semibold text-slate-100 px-4 py-3 border-b border-slate-800">
                 Surfaces
               </h3>
+              {formError && (
+                <p className="text-xs text-red-400 bg-red-950/40 border-b border-red-900 mx-4 mt-2 rounded px-2 py-1.5">
+                  {formError}
+                </p>
+              )}
               {isLoadingSurfaces && (
                 <p className="text-xs text-slate-400 px-4 py-3">
                   Loading surfaces...
@@ -433,67 +674,20 @@ export function RoomDetailPage({ token }: Props) {
               {!isLoadingSurfaces && surfaces.length > 0 && (
                 <div className="divide-y divide-slate-800">
                   {surfaces.map((s) => (
-                    <div
+                    <SurfaceCard
                       key={s.id}
-                      className="px-3 py-2.5 hover:bg-slate-800/30 transition-colors"
-                    >
-                      <div className="font-medium text-slate-100 text-sm">
-                        {s.room_equivalent}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-400">
-                        <span>{s.component}</span>
-                        <span>·</span>
-                        <span>{s.substrate}</span>
-                        <span>·</span>
-                        <span>{s.room_side}</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <span className="font-mono text-slate-200 text-xs">
-                          XRF {s.xrf_reading}
-                        </span>
-                        <span
-                          className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                            s.result === "positive"
-                              ? "bg-red-500/20 text-red-300"
-                              : "bg-emerald-500/20 text-emerald-300"
-                          }`}
-                        >
-                          {s.result}
-                        </span>
-                        {s.first_photo_url && (
-                          <a
-                            href={`${API_BASE}${s.first_photo_url}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <img
-                              src={`${API_BASE}${s.first_photo_url}`}
-                              alt=""
-                              className="w-7 h-7 object-cover rounded border border-slate-700 inline-block"
-                            />
-                          </a>
-                        )}
-                        <span className="text-slate-500 text-[11px]">
-                          {s.photo_count ?? 0} photo{(s.photo_count ?? 0) !== 1 ? "s" : ""}
-                        </span>
-                        <button
-                          type="button"
-                          disabled={uploadingSurfaceId === s.id}
-                          onClick={() => handleTakePhotoClick(s.id)}
-                          className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
-                        >
-                          {uploadingSurfaceId === s.id ? "…" : "Take photo"}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={uploadingSurfaceId === s.id}
-                          onClick={() => handleAddPhotoClick(s.id)}
-                          className="text-[11px] font-medium text-slate-400 hover:text-slate-300 touch-manipulation"
-                        >
-                          Add photo
-                        </button>
-                      </div>
-                    </div>
+                      surface={s}
+                      apiBase={API_BASE}
+                      isEditing={editingSurfaceId === s.id}
+                      isUpdating={updatingSurfaceId === s.id}
+                      isUploading={uploadingSurfaceId === s.id}
+                      substrateOptions={SUBSTRATE_OPTIONS}
+                      onEdit={() => setEditingSurfaceId(s.id)}
+                      onCancel={() => setEditingSurfaceId(null)}
+                      onSave={handleSurfaceUpdate}
+                      onTakePhoto={handleTakePhotoClick}
+                      onAddPhoto={handleAddPhotoClick}
+                    />
                   ))}
                 </div>
               )}

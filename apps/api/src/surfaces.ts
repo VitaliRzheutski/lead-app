@@ -147,6 +147,7 @@ surfacesRouter.patch(
       component,
       substrate,
       xrf_reading,
+      result: resultOverride,
       notes,
     } = req.body ?? {};
 
@@ -248,7 +249,17 @@ surfacesRouter.patch(
         return;
       }
 
-      const result = computeResult(newReading);
+      let result: "positive" | "negative" = current.result as "positive" | "negative";
+      if (resultOverride !== undefined) {
+        const r = String(resultOverride).toLowerCase();
+        if (r === "positive" || r === "negative") {
+          result = r;
+        } else {
+          result = computeResult(newReading);
+        }
+      } else {
+        result = computeResult(newReading);
+      }
       updates.push(`result = $${paramIndex++}`);
       values.push(result);
 
