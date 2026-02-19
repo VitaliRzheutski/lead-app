@@ -33,6 +33,29 @@ type Report = {
 
 const API_BASE = "http://localhost:3000";
 
+const ROOM_TYPE_OPTIONS = [
+  "Bedroom",
+  "Bathroom",
+  "Kitchen",
+  "Living Room",
+  "Dining Room",
+  "Foyer",
+  "Entrance Hallway",
+  "Hallway",
+  "Closet",
+  "Walk-In Closet",
+  "Utility Room",
+  "Laundry Room",
+  "Storage Room",
+  "Office",
+  "Nursery",
+  "Den",
+  "Family Room",
+  "Basement",
+  "Attic",
+  "Other",
+];
+
 export function InspectionDetailPage({ token }: Props) {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -44,10 +67,10 @@ export function InspectionDetailPage({ token }: Props) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [name, setName] = useState("");
+  const [roomType, setRoomType] = useState("Bedroom");
+  const [customRoomName, setCustomRoomName] = useState("");
   const [interiorExterior, setInteriorExterior] = useState("interior");
   const [floor, setFloor] = useState("");
-  const [roomName, setRoomName] = useState("");
   const [latestReport, setLatestReport] = useState<Report | null>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -254,16 +277,13 @@ export function InspectionDetailPage({ token }: Props) {
     event.preventDefault();
     setFormError(null);
 
-    if (!name.trim()) {
-      setFormError("Name is required.");
+    const nameToSend = roomType === "Other" ? customRoomName.trim() : roomType;
+    if (!nameToSend) {
+      setFormError(roomType === "Other" ? "Room name is required." : "Room type is required.");
       return;
     }
     if (!floor.trim()) {
       setFormError("Floor is required.");
-      return;
-    }
-    if (!roomName.trim()) {
-      setFormError("Room name is required.");
       return;
     }
 
@@ -279,10 +299,10 @@ export function InspectionDetailPage({ token }: Props) {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            name: name.trim(),
+            name: nameToSend,
             interior_exterior: interiorExterior,
             floor: floor.trim(),
-            room_name: roomName.trim(),
+            room_name: nameToSend,
           }),
         }
       );
@@ -295,9 +315,9 @@ export function InspectionDetailPage({ token }: Props) {
       }
 
       setRooms([...rooms, data.room]);
-      setName("");
+      setRoomType("Bedroom");
+      setCustomRoomName("");
       setFloor("");
-      setRoomName("");
       setInteriorExterior("interior");
       setShowAddForm(false);
     } catch (_err) {
@@ -471,20 +491,40 @@ export function InspectionDetailPage({ token }: Props) {
 
                     <div className="space-y-1.5">
                       <label
-                        htmlFor="roomName"
+                        htmlFor="roomType"
                         className="block text-xs font-medium text-slate-200"
                       >
-                        Name
+                        Room
                       </label>
-                      <input
-                        id="roomName"
-                        type="text"
-                        className="w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Room name"
-                      />
+                      <select
+                        id="roomType"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                        value={roomType}
+                        onChange={(e) => setRoomType(e.target.value)}
+                      >
+                        {ROOM_TYPE_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
                     </div>
+                    {roomType === "Other" && (
+                      <div className="space-y-1.5">
+                        <label
+                          htmlFor="customRoomName"
+                          className="block text-xs font-medium text-slate-200"
+                        >
+                          Room name
+                        </label>
+                        <input
+                          id="customRoomName"
+                          type="text"
+                          className="w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                          value={customRoomName}
+                          onChange={(e) => setCustomRoomName(e.target.value)}
+                          placeholder="e.g. Sunroom"
+                        />
+                      </div>
+                    )}
 
                     <div className="space-y-1.5">
                       <label
@@ -518,23 +558,6 @@ export function InspectionDetailPage({ token }: Props) {
                         value={floor}
                         onChange={(e) => setFloor(e.target.value)}
                         placeholder="e.g. 1st Floor"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label
-                        htmlFor="roomNameLabel"
-                        className="block text-xs font-medium text-slate-200"
-                      >
-                        Room name (label)
-                      </label>
-                      <input
-                        id="roomNameLabel"
-                        type="text"
-                        className="w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                        value={roomName}
-                        onChange={(e) => setRoomName(e.target.value)}
-                        placeholder="e.g. Building Entrance / Foyer"
                       />
                     </div>
 

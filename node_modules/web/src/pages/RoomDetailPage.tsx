@@ -55,6 +55,7 @@ export function RoomDetailPage({ token }: Props) {
   const [roomCode, setRoomCode] = useState("");
   const [roomEquivalent, setRoomEquivalent] = useState("");
   const [notes, setNotes] = useState("");
+  const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
     if (!roomId) {
@@ -214,6 +215,7 @@ export function RoomDetailPage({ token }: Props) {
       setRoomCode("");
       setRoomEquivalent("");
       setNotes("");
+      setShowAddForm(false);
     } catch (_err) {
       setFormError("Unable to reach the server.");
     } finally {
@@ -259,16 +261,34 @@ export function RoomDetailPage({ token }: Props) {
               </h2>
             </div>
 
-            <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-slate-100">
-                Add surface
-              </h3>
-              {formError && (
-                <p className="text-xs text-red-400 bg-red-950/40 border border-red-900 rounded px-2 py-1.5">
-                  {formError}
-                </p>
-              )}
-              <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+              {!showAddForm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(true)}
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-left text-sm font-medium text-slate-100 hover:bg-slate-800/50 active:bg-slate-800 transition-colors touch-manipulation"
+                >
+                  <span>Add surface</span>
+                  <span className="text-sky-400 text-lg leading-none">+</span>
+                </button>
+              ) : (
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-100">Add surface</h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddForm(false)}
+                      className="text-slate-400 hover:text-slate-200 text-sm py-1 px-2 -mr-2 touch-manipulation"
+                    >
+                      −
+                    </button>
+                  </div>
+                  {formError && (
+                    <p className="text-xs text-red-400 bg-red-950/40 border border-red-900 rounded px-2 py-1.5">
+                      {formError}
+                    </p>
+                  )}
+                  <form onSubmit={handleSubmit} className="space-y-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-200 mb-1">
                     Component
@@ -375,6 +395,8 @@ export function RoomDetailPage({ token }: Props) {
                   {isSubmitting ? "Saving..." : "Save surface"}
                 </button>
               </form>
+                </div>
+              )}
             </div>
 
             <input
