@@ -431,112 +431,70 @@ export function RoomDetailPage({ token }: Props) {
                 </p>
               )}
               {!isLoadingSurfaces && surfaces.length > 0 && (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-800 bg-slate-950/50">
-                        <th className="px-3 py-2.5 font-medium text-slate-300">
-                          Component
-                        </th>
-                        <th className="px-3 py-2.5 font-medium text-slate-300">
-                          Substrate
-                        </th>
-                        <th className="px-3 py-2.5 font-medium text-slate-300">
-                          XRF
-                        </th>
-                        <th className="px-3 py-2.5 font-medium text-slate-300">
-                          Result
-                        </th>
-                        <th className="px-3 py-2.5 font-medium text-slate-300">
-                          Side
-                        </th>
-                        <th className="px-3 py-2.5 font-medium text-slate-300">
-                          Code
-                        </th>
-                        <th className="px-3 py-2.5 font-medium text-slate-300">
-                          Equivalent
-                        </th>
-                        <th className="px-3 py-2.5 font-medium text-slate-300 min-w-[11rem]">
-                          Photos
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {surfaces.map((s) => (
-                        <tr
-                          key={s.id}
-                          className="border-b border-slate-800/80 hover:bg-slate-800/30"
+                <div className="divide-y divide-slate-800">
+                  {surfaces.map((s) => (
+                    <div
+                      key={s.id}
+                      className="px-3 py-2.5 hover:bg-slate-800/30 transition-colors"
+                    >
+                      <div className="font-medium text-slate-100 text-sm">
+                        {s.room_equivalent}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-400">
+                        <span>{s.component}</span>
+                        <span>·</span>
+                        <span>{s.substrate}</span>
+                        <span>·</span>
+                        <span>{s.room_side}</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <span className="font-mono text-slate-200 text-xs">
+                          XRF {s.xrf_reading}
+                        </span>
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                            s.result === "positive"
+                              ? "bg-red-500/20 text-red-300"
+                              : "bg-emerald-500/20 text-emerald-300"
+                          }`}
                         >
-                          <td className="px-3 py-2.5 text-slate-200">
-                            {s.component}
-                          </td>
-                          <td className="px-3 py-2.5 text-slate-200">
-                            {s.substrate}
-                          </td>
-                          <td className="px-3 py-2.5 text-slate-200 font-mono text-xs">
-                            {s.xrf_reading}
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <span
-                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                s.result === "positive"
-                                  ? "bg-red-500/20 text-red-300 border border-red-500/40"
-                                  : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                              }`}
-                            >
-                              {s.result}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2.5 text-slate-300 text-xs">
-                            {s.room_side}
-                          </td>
-                          <td className="px-3 py-2.5 text-slate-300 text-xs font-mono">
-                            {s.room_code ?? "—"}
-                          </td>
-                          <td className="px-3 py-2.5 text-slate-300 text-xs max-w-[120px] truncate">
-                            {s.room_equivalent}
-                          </td>
-                          <td className="px-3 py-2.5 min-w-[11rem]">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {s.first_photo_url ? (
-                                <a
-                                  href={`${API_BASE}${s.first_photo_url}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex-shrink-0"
-                                >
-                                  <img
-                                    src={`${API_BASE}${s.first_photo_url}`}
-                                    alt=""
-                                    className="w-8 h-8 object-cover rounded border border-slate-700"
-                                  />
-                                </a>
-                              ) : null}
-                              <span className="text-slate-400 text-xs font-mono">
-                                {s.photo_count ?? 0}
-                              </span>
-                              <button
-                                type="button"
-                                disabled={uploadingSurfaceId === s.id}
-                                onClick={() => handleTakePhotoClick(s.id)}
-                                className="text-[11px] font-medium text-sky-400 hover:text-sky-300 disabled:opacity-60 touch-manipulation"
-                              >
-                                {uploadingSurfaceId === s.id ? "…" : "Take photo"}
-                              </button>
-                              <button
-                                type="button"
-                                disabled={uploadingSurfaceId === s.id}
-                                onClick={() => handleAddPhotoClick(s.id)}
-                                className="text-[11px] font-medium text-slate-400 hover:text-slate-300 disabled:opacity-60 touch-manipulation"
-                              >
-                                Add photo
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          {s.result}
+                        </span>
+                        {s.first_photo_url && (
+                          <a
+                            href={`${API_BASE}${s.first_photo_url}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <img
+                              src={`${API_BASE}${s.first_photo_url}`}
+                              alt=""
+                              className="w-7 h-7 object-cover rounded border border-slate-700 inline-block"
+                            />
+                          </a>
+                        )}
+                        <span className="text-slate-500 text-[11px]">
+                          {s.photo_count ?? 0} photo{(s.photo_count ?? 0) !== 1 ? "s" : ""}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={uploadingSurfaceId === s.id}
+                          onClick={() => handleTakePhotoClick(s.id)}
+                          className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
+                        >
+                          {uploadingSurfaceId === s.id ? "…" : "Take photo"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={uploadingSurfaceId === s.id}
+                          onClick={() => handleAddPhotoClick(s.id)}
+                          className="text-[11px] font-medium text-slate-400 hover:text-slate-300 touch-manipulation"
+                        >
+                          Add photo
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

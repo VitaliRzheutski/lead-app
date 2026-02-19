@@ -39,6 +39,12 @@ function cabinetDoor(equivalent: string): { room_side: string; room_equivalent: 
 function cabinetFrame(equivalent: string): { room_side: string; room_equivalent: string; component: string; substrate: string } {
   return { room_side: "N/A", room_equivalent: equivalent, component: "Door", substrate: "Wood" };
 }
+function shelfItem(equivalent: string): { room_side: string; room_equivalent: string; component: string; substrate: string } {
+  return { room_side: "N/A", room_equivalent: equivalent, component: "Closet", substrate: "Wood" };
+}
+function stair(equivalent: string): { room_side: string; room_equivalent: string; component: string; substrate: string } {
+  return { room_side: "N/A", room_equivalent: equivalent, component: "Floor", substrate: "Wood" };
+}
 
 const BEDROOM: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
   wall("Bedroom Wall", 0), wall("Bedroom Wall", 1), wall("Bedroom Wall", 2), wall("Bedroom Wall", 3),
@@ -54,7 +60,7 @@ const BATHROOM: { room_side: string; room_equivalent: string; component: string;
   door("Bath Door Panel"), door("Bath Door Jamb"), door("Bath Door Casing"),
   door("Bath Closet Door Panel"), door("Bath Closet Door Jamb"), door("Bath Closet Door Casing"),
   closet("Inside Bath Closet"), shelf("Closet Shelf"),
-  ceiling("Bath Ceiling"), floor("Bath Floor"), radiator("Radiator"),
+  ceiling("Bath Ceiling"), floor("Bath Floor"), baseboard("Baseboard"), radiator("Radiator"),
   window("Bath Window Sill"), window("Bath Window Side Casing"), window("Bath Window Sash (Mid)"),
 ];
 
@@ -75,12 +81,29 @@ const LIVING_ROOM: { room_side: string; room_equivalent: string; component: stri
   window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
 ];
 
-const FOYER: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
-  door("Front Door Panel"), door("Front Door Jamb"), door("Front Door Casing"),
-  wall("Foyer Wall", 0), wall("Foyer Wall", 1), wall("Foyer Wall", 2), wall("Foyer Wall", 3),
-  ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
+const DINING_ROOM: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Dining Room Wall", 0), wall("Dining Room Wall", 1), wall("Dining Room Wall", 2), wall("Dining Room Wall", 3),
+  door("Door Panel"), door("Door Jamb"), door("Door Casing"),
   door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
   closet("Inside Closet"), shelf("Closet Shelf"),
+  ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
+  window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
+];
+
+const FOYER: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Foyer Wall", 0), wall("Foyer Wall", 1), wall("Foyer Wall", 2), wall("Foyer Wall", 3),
+  door("Front Door Panel"), door("Front Door Jamb"), door("Front Door Casing"),
+  door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
+  closet("Inside Closet"), shelf("Closet Shelf"),
+  ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
+];
+
+const ENTRANCE_HALLWAY: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Entrance Hallway Wall", 0), wall("Entrance Hallway Wall", 1), wall("Entrance Hallway Wall", 2), wall("Entrance Hallway Wall", 3),
+  door("Door Panel"), door("Door Jamb"), door("Door Casing"),
+  door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
+  closet("Inside Closet"), shelf("Closet Shelf"),
+  ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
 ];
 
 const HALLWAY: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
@@ -97,15 +120,95 @@ const COMMON_AREA: { room_side: string; room_equivalent: string; component: stri
   window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
 ];
 
+const CLOSET: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Closet Wall", 0), wall("Closet Wall", 1), wall("Closet Wall", 2), wall("Closet Wall", 3),
+  door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
+  closet("Inside Closet"), shelf("Closet Shelf"),
+  ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"),
+];
+
+const WALK_IN_CLOSET: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Walk-In Closet Wall", 0), wall("Walk-In Closet Wall", 1), wall("Walk-In Closet Wall", 2), wall("Walk-In Closet Wall", 3),
+  door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
+  closet("Inside Closet"), shelf("Closet Shelf"), shelf("Closet Shelf"),
+  ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"),
+];
+
+const UTILITY_ROOM: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Utility Room Wall", 0), wall("Utility Room Wall", 1), wall("Utility Room Wall", 2), wall("Utility Room Wall", 3),
+  door("Door Panel"), door("Door Jamb"), door("Door Casing"),
+  ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
+  window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
+];
+
+const LAUNDRY_ROOM: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Laundry Room Wall", 0), wall("Laundry Room Wall", 1), wall("Laundry Room Wall", 2), wall("Laundry Room Wall", 3),
+  door("Door Panel"), door("Door Jamb"), door("Door Casing"),
+  cabinetDoor("Cabinet Door"), cabinetFrame("Cabinet Frame"), closet("Inside Cabinet"),
+  ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
+];
+
+const STORAGE_ROOM: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Storage Room Wall", 0), wall("Storage Room Wall", 1), wall("Storage Room Wall", 2), wall("Storage Room Wall", 3),
+  door("Door Panel"), door("Door Jamb"), door("Door Casing"),
+  closet("Inside Storage"), shelfItem("Shelf"),
+  ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"),
+];
+
+const OFFICE: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Office Wall", 0), wall("Office Wall", 1), wall("Office Wall", 2), wall("Office Wall", 3),
+  door("Door Panel"), door("Door Jamb"), door("Door Casing"),
+  door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
+  closet("Inside Closet"), shelf("Closet Shelf"),
+  ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
+  window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
+];
+
+const NURSERY: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Nursery Wall", 0), wall("Nursery Wall", 1), wall("Nursery Wall", 2), wall("Nursery Wall", 3),
+  door("Door Panel"), door("Door Jamb"), door("Door Casing"),
+  door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
+  closet("Inside Closet"), shelf("Closet Shelf"),
+  ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
+  window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
+];
+
+const BASEMENT: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Basement Wall", 0), wall("Basement Wall", 1), wall("Basement Wall", 2), wall("Basement Wall", 3),
+  door("Door Panel"), door("Door Jamb"), door("Door Casing"),
+  window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
+  ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
+  stair("Stair Rail"), stair("Stair Tread"), stair("Stair Riser"),
+];
+
+const ATTIC: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Attic Wall", 0), wall("Attic Wall", 1), wall("Attic Wall", 2), wall("Attic Wall", 3),
+  door("Door Panel"), door("Door Jamb"), door("Door Casing"),
+  ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"),
+  window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
+];
+
 const TEMPLATES: Record<string, { room_side: string; room_equivalent: string; component: string; substrate: string }[]> = {
   "Bedroom": BEDROOM,
   "Bathroom": BATHROOM,
   "Kitchen": KITCHEN,
   "Living Room": LIVING_ROOM,
+  "Dining Room": DINING_ROOM,
   "Foyer / Front Door": FOYER,
   "Foyer": FOYER,
-  "Entrance Hallway": HALLWAY,
+  "Entrance Hallway": ENTRANCE_HALLWAY,
   "Hallway": HALLWAY,
+  "Closet": CLOSET,
+  "Walk-In Closet": WALK_IN_CLOSET,
+  "Utility Room": UTILITY_ROOM,
+  "Laundry Room": LAUNDRY_ROOM,
+  "Storage Room": STORAGE_ROOM,
+  "Office": OFFICE,
+  "Nursery": NURSERY,
+  "Den": LIVING_ROOM,
+  "Family Room": LIVING_ROOM,
+  "Basement": BASEMENT,
+  "Attic": ATTIC,
   "Common Area": COMMON_AREA,
 };
 

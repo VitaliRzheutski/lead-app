@@ -9,6 +9,7 @@ import {
   generatePdfBytesFromHtml,
   storeReportPdf,
 } from "./report";
+import { getSurfacesForRoomType } from "./room-templates";
 
 interface InspectionRow {
   id: string;
@@ -226,7 +227,18 @@ inspectionsRouter.post(
          RETURNING id, inspection_id, name, interior_exterior, floor, room_name`,
         [inspectionId, name.trim(), interiorValue, floor.trim(), room_name.trim()]
       );
-      res.status(201).json({ room: result.rows[0] });
+      const room = result.rows[0];
+      const templateSurfaces = getSurfacesForRoomType(room.room_name);
+      if (templateSurfaces?.length) {
+        for (const s of templateSurfaces) {
+          await query(
+            `INSERT INTO surfaces (room_id, room_side, room_code, room_equivalent, component, substrate, xrf_reading, result, notes)
+             VALUES ($1, $2, NULL, $3, $4, $5, 0, 'negative', NULL)`,
+            [room.id, s.room_side, s.room_equivalent, s.component, s.substrate]
+          );
+        }
+      }
+      res.status(201).json({ room });
     } catch (err) {
       if (process.env.NODE_ENV !== "production") console.error(err);
       res.status(500).json({ error: "Failed to create room." });
