@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../config";
 
 type Props = {
   token: string;
@@ -38,7 +39,7 @@ export function NewInspectionPage({ token }: Props) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:3000/inspections", {
+      const response = await fetch(`${API_URL}/inspections`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

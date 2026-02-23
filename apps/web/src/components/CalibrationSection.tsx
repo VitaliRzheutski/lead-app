@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_URL } from "../config";
 
 type Calibration = {
   id: string;
@@ -43,12 +44,10 @@ type Props = {
   onCalibrationUpdate?: (data: { calibration: Calibration | null; entries: CalibrationEntry[] }) => void;
 };
 
-const API_BASE = "http://localhost:3000";
-
 export function CalibrationSection({
   inspectionId,
   token,
-  apiBase = API_BASE,
+  apiBase = API_URL,
   onCalibrationUpdate,
 }: Props) {
   const [calibration, setCalibration] = useState<Calibration | null>(null);

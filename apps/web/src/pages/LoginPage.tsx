@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { setToken } from "../auth";
+import { API_URL } from "../config";
 
 type Props = {
   onAuthSuccess?: (token: string) => void;
@@ -31,7 +32,7 @@ export function LoginPage({ onAuthSuccess }: Props) {
 
     try {
       console.log("email", email);
-      const response = await fetch("http://localhost:3000/auth/login", {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

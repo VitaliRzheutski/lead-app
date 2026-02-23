@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { clearToken } from "../auth";
+import { API_URL } from "../config";
 
 type Props = {
   token: string;
@@ -31,7 +32,7 @@ export function DashboardPage({ token, onLogout }: Props) {
       setError(null);
 
       try {
-        const response = await fetch("http://localhost:3000/inspections", {
+        const response = await fetch(`${API_URL}/inspections`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

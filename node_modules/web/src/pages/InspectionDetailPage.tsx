@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CalibrationSection } from "../components/CalibrationSection";
+import { API_URL } from "../config";
 
 type Props = {
   token: string;
@@ -31,8 +32,6 @@ type Report = {
   status: string;
   public_url: string | null;
 };
-
-const API_BASE = "http://localhost:3000";
 
 const ROOM_TYPE_OPTIONS = [
   "Bedroom",
@@ -94,7 +93,7 @@ export function InspectionDetailPage({ token }: Props) {
       setError(null);
       try {
         const response = await fetch(
-          `${API_BASE}/inspections/${id}`,
+          `${API_URL}/inspections/${id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -141,7 +140,7 @@ export function InspectionDetailPage({ token }: Props) {
       setIsLoadingRooms(true);
       try {
         const response = await fetch(
-          `${API_BASE}/inspections/${id}/rooms`,
+          `${API_URL}/inspections/${id}/rooms`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -189,7 +188,7 @@ export function InspectionDetailPage({ token }: Props) {
       setReportError(null);
       try {
         const response = await fetch(
-          `${API_BASE}/inspections/${id}/report`,
+          `${API_URL}/inspections/${id}/report`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await response.json();
@@ -221,7 +220,7 @@ export function InspectionDetailPage({ token }: Props) {
     setReportError(null);
     try {
       const response = await fetch(
-        `${API_BASE}/inspections/${id}/report`,
+        `${API_URL}/inspections/${id}/report`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -236,7 +235,7 @@ export function InspectionDetailPage({ token }: Props) {
       const reportUrl =
         data.publicUrl ??
         data.report_url ??
-        `${API_BASE}/inspections/${id}/reports/${data.reportId}/download`;
+        `${API_URL}/inspections/${id}/reports/${data.reportId}/download`;
       setLatestReport({
         id: String(data.reportId),
         inspection_id: id,
@@ -258,7 +257,7 @@ export function InspectionDetailPage({ token }: Props) {
       const base =
         latestReport.public_url?.startsWith("http")
           ? latestReport.public_url
-          : `${API_BASE}/inspections/${id}/reports/${latestReport.id}/download`;
+          : `${API_URL}/inspections/${id}/reports/${latestReport.id}/download`;
       const url = `${base}${base.includes("?") ? "&" : "?"}v=${latestReport.id}`;
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -300,7 +299,7 @@ export function InspectionDetailPage({ token }: Props) {
 
     try {
       const response = await fetch(
-        `${API_BASE}/inspections/${id}/rooms`,
+        `${API_URL}/inspections/${id}/rooms`,
         {
           method: "POST",
           headers: {
@@ -342,7 +341,7 @@ export function InspectionDetailPage({ token }: Props) {
     }
 
     try {
-      const response = await fetch(`${API_BASE}/rooms/${roomId}`, {
+      const response = await fetch(`${API_URL}/rooms/${roomId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -475,7 +474,7 @@ export function InspectionDetailPage({ token }: Props) {
                 <CalibrationSection
                   inspectionId={id}
                   token={token}
-                  apiBase={API_BASE}
+                  apiBase={API_URL}
                   onCalibrationUpdate={handleCalibrationUpdate}
                 />
               )}

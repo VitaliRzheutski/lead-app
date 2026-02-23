@@ -1,5 +1,6 @@
 import React, { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { API_URL } from "../config";
 
 type Props = {
   token: string;
@@ -26,8 +27,6 @@ type Surface = {
   photo_count?: number;
   first_photo_url?: string | null;
 };
-
-const API_BASE = "http://localhost:3000";
 
 const COMPONENT_OPTIONS = ["Wall", "Door", "Floor", "Baseboard", "Window", "Closet", "Radiator", "Wall Molding"];
 
@@ -273,7 +272,7 @@ export function RoomDetailPage({ token }: Props) {
       setIsLoadingRoom(true);
       setError(null);
       try {
-        const response = await fetch(`http://localhost:3000/rooms/${roomId}`, {
+        const response = await fetch(`${API_URL}/rooms/${roomId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await response.json();
@@ -302,7 +301,7 @@ export function RoomDetailPage({ token }: Props) {
       setIsLoadingSurfaces(true);
       try {
         const response = await fetch(
-          `http://localhost:3000/rooms/${roomId}/surfaces`,
+          `${API_URL}/rooms/${roomId}/surfaces`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await response.json();
@@ -341,7 +340,7 @@ export function RoomDetailPage({ token }: Props) {
       const formData = new FormData();
       formData.append("photo", file);
       const response = await fetch(
-        `http://localhost:3000/surfaces/${surfaceId}/photos`,
+        `${API_URL}/surfaces/${surfaceId}/photos`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -379,7 +378,7 @@ export function RoomDetailPage({ token }: Props) {
     setUpdatingSurfaceId(surfaceId);
     try {
       const response = await fetch(
-        `http://localhost:3000/surfaces/${surfaceId}`,
+        `${API_URL}/surfaces/${surfaceId}`,
         {
           method: "PATCH",
           headers: {
@@ -423,7 +422,7 @@ export function RoomDetailPage({ token }: Props) {
     setIsSubmitting(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/rooms/${roomId}/surfaces`,
+        `${API_URL}/rooms/${roomId}/surfaces`,
         {
           method: "POST",
           headers: {
@@ -677,7 +676,7 @@ export function RoomDetailPage({ token }: Props) {
                     <SurfaceCard
                       key={s.id}
                       surface={s}
-                      apiBase={API_BASE}
+                      apiBase={API_URL}
                       isEditing={editingSurfaceId === s.id}
                       isUpdating={updatingSurfaceId === s.id}
                       isUploading={uploadingSurfaceId === s.id}
