@@ -84,9 +84,9 @@ Deploy the Lead app (API + Web) on Render's free tier.
 | Setting | Value |
 |---------|-------|
 | **Name** | `lead-app-web` |
-| **Root Directory** | `apps/web` |
-| **Build Command** | `npm install && npx vite build` |
-| **Publish Directory** | `dist` |
+| **Root Directory** | *(leave blank — use repo root)* |
+| **Build Command** | `npm install && npm run build --workspace=web` |
+| **Publish Directory** | `apps/web/dist` |
 
 4. **Environment Variables** — add:
 
