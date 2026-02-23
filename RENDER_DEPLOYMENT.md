@@ -8,7 +8,7 @@ Added RENDER_DEPLOYMENT.md with step-by-step instructions
 Documented FRONTEND_URL and API_BASE_URL for production
 Quick reference
 Service	Root Dir	Build	Start (API)
-API	apps/api	npm install && npm run build	npm run migrate && npm run start
+API	apps/api	npm install --include=dev && npm run build	npm run migrate:prod && npm run start
 Web	apps/web	npm install && npm run build	—
 Web	Publish	—	dist
 The guide walks through creating the PostgreSQL database, API Web Service, and Static Site, and lists all required environment variables.
@@ -52,7 +52,7 @@ Deploy the Lead app (API + Web) on Render's free tier.
 | **Root Directory** | `apps/api` |
 | **Runtime** | Node |
 | **Build Command** | `npm install --include=dev && npm run build` |
-| **Start Command** | `npm run migrate && npm run start` |
+| **Start Command** | `npm run migrate:prod && npm run start` |
 
 4. **Environment Variables** — add:
 
@@ -109,10 +109,10 @@ Deploy the Lead app (API + Web) on Render's free tier.
 
 ## Part 5: Run Migrations (First Time)
 
-Migrations run automatically via `npm run migrate` in the Start Command. If you need to run them manually:
+Migrations run automatically via `npm run migrate:prod` in the Start Command. If you need to run them manually:
 
 1. API service → **Shell** tab
-2. Run: `npm run migrate`
+2. Run: `npm run migrate:prod`
 
 ---
 
