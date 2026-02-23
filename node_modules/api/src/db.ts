@@ -1,4 +1,4 @@
-import { Pool } from "pg";
+import { Pool, QueryResultRow } from "pg";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -15,7 +15,7 @@ export const pool = new Pool({
   connectionString: databaseUrl,
 });
 
-export async function query<T = unknown>(
+export async function query<T extends QueryResultRow = QueryResultRow>(
   text: string,
   params?: unknown[]
 ): Promise<{ rows: T[] }> {

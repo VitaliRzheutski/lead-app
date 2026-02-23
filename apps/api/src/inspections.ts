@@ -437,8 +437,8 @@ inspectionsRouter.post(
       res.status(401).json({ error: "Unauthorized." });
       return;
     }
-    const inspectionId = req.params.id;
-    if (!inspectionId) {
+    const inspectionId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    if (!inspectionId || typeof inspectionId !== "string") {
       res.status(400).json({ error: "Inspection id is required." });
       return;
     }
@@ -448,7 +448,7 @@ inspectionsRouter.post(
         res.status(404).json({ error: "Inspection not found." });
         return;
       }
-      const html = renderReportHtml(data);
+      const html = renderReportHtml({ ...data, inspection: data.inspection });
       const pdfBytes = await generatePdfBytesFromHtml(html);
       const timestamp = Date.now();
       const objectKey = `inspections/${inspectionId}/reports/${timestamp}_report.pdf`;
@@ -480,9 +480,9 @@ inspectionsRouter.get(
       res.status(401).json({ error: "Unauthorized." });
       return;
     }
-    const inspectionId = req.params.id;
-    const reportId = req.params.reportId;
-    if (!inspectionId || !reportId) {
+    const inspectionId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const reportId = Array.isArray(req.params.reportId) ? req.params.reportId[0] : req.params.reportId;
+    if (!inspectionId || !reportId || typeof inspectionId !== "string" || typeof reportId !== "string") {
       res.status(400).json({ error: "Inspection id and report id are required." });
       return;
     }

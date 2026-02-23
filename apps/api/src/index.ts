@@ -18,9 +18,10 @@ const reportsDir = path.join(process.cwd(), "reports");
 fs.mkdirSync(uploadsDir, { recursive: true });
 fs.mkdirSync(reportsDir, { recursive: true });
 
+const corsOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: corsOrigin,
     credentials: false,
   })
 );
@@ -64,7 +65,7 @@ app.use(
   }
 );
 
-const port = Number(process.env.API_PORT) || 3000;
+const port = Number(process.env.PORT || process.env.API_PORT) || 3000;
 
 if (!Number.isFinite(port) || port <= 0) {
   throw new Error("Invalid API_PORT value. It must be a positive integer.");
