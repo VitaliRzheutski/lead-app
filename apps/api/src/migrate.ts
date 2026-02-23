@@ -27,7 +27,10 @@ async function runMigrations() {
       )`
     );
 
-    const migrationsDir = path.join(__dirname, "migrations");
+    // When compiled, __dirname is dist/ - migrations are in src/migrations
+    const migrationsDir = fs.existsSync(path.join(__dirname, "migrations"))
+      ? path.join(__dirname, "migrations")
+      : path.join(__dirname, "..", "src", "migrations");
 
     if (!fs.existsSync(migrationsDir)) {
       console.log(`No migrations directory found at ${migrationsDir}. Nothing to run.`);
