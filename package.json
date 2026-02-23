@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev:web": "npm run dev --workspace web",
-    "dev:api": "npm run dev --workspace api"
+    "dev:api": "npm run dev --workspace api",
+    "build:web": "cd apps/web && node ../../node_modules/vite/bin/vite.js build"
   }
 }
