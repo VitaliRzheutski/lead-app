@@ -31,6 +31,10 @@ app.use(express.json());
 app.use("/uploads", express.static(uploadsDir));
 app.use("/reports", express.static(reportsDir));
 
+app.get("/", (_req: Request, res: Response) => {
+  res.status(200).json({ ok: true, service: "Lead Inspection API", docs: "/health" });
+});
+
 app.get("/health", (_req: Request, res: Response) => {
   res.status(200).json({ ok: true });
 });
