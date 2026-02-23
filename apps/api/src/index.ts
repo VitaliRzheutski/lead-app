@@ -18,10 +18,20 @@ const reportsDir = path.join(process.cwd(), "reports");
 fs.mkdirSync(uploadsDir, { recursive: true });
 fs.mkdirSync(reportsDir, { recursive: true });
 
-const corsOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(",").map((s) => s.trim()) : []),
+];
 app.use(
   cors({
-    origin: corsOrigin,
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        cb(null, true);
+      } else {
+        cb(null, false);
+      }
+    },
     credentials: false,
   })
 );
