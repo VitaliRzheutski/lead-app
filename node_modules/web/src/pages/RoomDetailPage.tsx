@@ -30,6 +30,8 @@ type Surface = {
 
 const COMPONENT_OPTIONS = ["Wall", "Door", "Floor", "Baseboard", "Window", "Closet", "Radiator", "Wall Molding"];
 
+const ROOM_SIDE_EDIT_OPTIONS = ["A (back)", "B (left)", "C (Front)", "D (Right)", "N/A"];
+
 type SurfaceCardProps = {
   surface: Surface;
   apiBase: string;
@@ -39,7 +41,7 @@ type SurfaceCardProps = {
   substrateOptions: string[];
   onEdit: () => void;
   onCancel: () => void;
-  onSave: (id: string, p: { xrf_reading?: number; result?: string; substrate?: string; notes?: string }) => void;
+  onSave: (id: string, p: { xrf_reading?: number; result?: string; substrate?: string; notes?: string; room_side?: string }) => void;
   onTakePhoto: (id: string) => void;
   onAddPhoto: (id: string) => void;
 };
@@ -60,6 +62,7 @@ function SurfaceCard({
   const [editXrf, setEditXrf] = useState(String(surface.xrf_reading));
   const [editResult, setEditResult] = useState(surface.result);
   const [editSubstrate, setEditSubstrate] = useState(surface.substrate);
+  const [editRoomSide, setEditRoomSide] = useState(surface.room_side);
   const [editNotes, setEditNotes] = useState(surface.notes ?? "");
 
   useEffect(() => {
@@ -67,9 +70,10 @@ function SurfaceCard({
       setEditXrf(String(surface.xrf_reading));
       setEditResult(surface.result);
       setEditSubstrate(surface.substrate);
+      setEditRoomSide(surface.room_side);
       setEditNotes(surface.notes ?? "");
     }
-  }, [isEditing, surface.id, surface.xrf_reading, surface.result, surface.substrate, surface.notes]);
+  }, [isEditing, surface.id, surface.xrf_reading, surface.result, surface.substrate, surface.room_side, surface.notes]);
 
   function handleSave() {
     const readingNum = Number(editXrf);
@@ -78,6 +82,7 @@ function SurfaceCard({
       xrf_reading: readingNum,
       result: editResult,
       substrate: editSubstrate,
+      room_side: editRoomSide || undefined,
       notes: editNotes.trim() || undefined,
     });
   }
@@ -116,6 +121,22 @@ function SurfaceCard({
             >
               <option value="negative">negative</option>
               <option value="positive">positive</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-slate-400 mb-0.5">Room side</label>
+            <select
+              value={editRoomSide}
+              onChange={(e) => setEditRoomSide(e.target.value)}
+              className="w-full rounded border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm text-slate-50"
+            >
+              <option value="">—</option>
+              {ROOM_SIDE_EDIT_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+              {editRoomSide && !ROOM_SIDE_EDIT_OPTIONS.includes(editRoomSide) && (
+                <option value={editRoomSide}>{editRoomSide}</option>
+              )}
             </select>
           </div>
           <div className="col-span-2">
@@ -393,7 +414,7 @@ export function RoomDetailPage({ token }: Props) {
 
   async function handleSurfaceUpdate(
     surfaceId: string,
-    payload: { xrf_reading?: number; result?: string; substrate?: string; notes?: string }
+    payload: { xrf_reading?: number; result?: string; substrate?: string; notes?: string; room_side?: string }
   ) {
     setFormError(null);
     setUpdatingSurfaceId(surfaceId);
