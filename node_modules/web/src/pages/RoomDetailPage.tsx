@@ -200,8 +200,21 @@ function SurfaceCard({
 
   return (
     <div className="px-3 py-2.5 hover:bg-slate-800/30 transition-colors">
-      <div className="font-medium text-slate-100 text-sm">
-        {surface.room_equivalent}
+      <div className="flex items-start justify-between gap-2">
+        <div className="font-medium text-slate-100 text-sm min-w-0">
+          {surface.room_equivalent}
+        </div>
+        <button
+          type="button"
+          onClick={onEdit}
+          title="Edit"
+          className="shrink-0 p-1 rounded text-slate-400 hover:text-sky-400 hover:bg-slate-700/50 touch-manipulation"
+          aria-label="Edit"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+        </button>
       </div>
       <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-400">
         <span>{surface.component}</span>
@@ -244,29 +257,38 @@ function SurfaceCard({
         <span className="text-slate-500 text-[11px]">
           {surface.photo_count ?? 0} photo{(surface.photo_count ?? 0) !== 1 ? "s" : ""}
         </span>
-        <button
-          type="button"
-          onClick={onEdit}
-          className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
-        >
-          Edit
-        </button>
-        <button
-          type="button"
-          disabled={isUploading}
-          onClick={() => onTakePhoto(surface.id)}
-          className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
-        >
-          {isUploading ? "…" : "Take photo"}
-        </button>
-        <button
-          type="button"
-          disabled={isUploading}
-          onClick={() => onAddPhoto(surface.id)}
-          className="text-[11px] font-medium text-slate-400 hover:text-slate-300 touch-manipulation"
-        >
-          Add photo
-        </button>
+        <span className="inline-flex items-center gap-0.5">
+          <button
+            type="button"
+            disabled={isUploading}
+            onClick={() => onTakePhoto(surface.id)}
+            title="Take photo"
+            className="p-1 rounded text-sky-400 hover:text-sky-300 hover:bg-slate-700/50 touch-manipulation disabled:opacity-60"
+            aria-label="Take photo"
+          >
+            {isUploading ? (
+              <span className="text-[10px]">…</span>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <rect x="4" y="6" width="16" height="12" rx="2" strokeWidth={2} />
+                <circle cx="12" cy="11" r="3" strokeWidth={2} />
+                <path strokeLinecap="round" strokeWidth={2} d="M8 6V5a1 1 0 011-1h6a1 1 0 011 1v1" />
+              </svg>
+            )}
+          </button>
+          <button
+            type="button"
+            disabled={isUploading}
+            onClick={() => onAddPhoto(surface.id)}
+            title="Add photo"
+            className="p-1 rounded text-slate-400 hover:text-slate-300 hover:bg-slate-700/50 touch-manipulation disabled:opacity-60"
+            aria-label="Add photo"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+          </button>
+        </span>
       </div>
     </div>
   );
