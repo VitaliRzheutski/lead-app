@@ -96,7 +96,14 @@ function SurfaceCard({
               min={0}
               step="any"
               value={editXrf}
-              onChange={(e) => setEditXrf(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value;
+                setEditXrf(v);
+                const n = Number(v);
+                if (v !== "" && Number.isFinite(n) && n >= 0) {
+                  setEditResult(n < 0.5 ? "negative" : "positive");
+                }
+              }}
               className="w-full rounded border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm text-slate-50"
             />
           </div>
