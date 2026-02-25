@@ -313,6 +313,7 @@ export function RoomDetailPage({ token }: Props) {
   const addPhotoInputRef = useRef<HTMLInputElement>(null);
   const takePhotoInputRef = useRef<HTMLInputElement>(null);
 
+  const [substrateOptions, setSubstrateOptions] = useState<string[]>(() => [...SUBSTRATE_OPTIONS]);
   const [component, setComponent] = useState(COMPONENT_OPTIONS[0]);
   const [substrate, setSubstrate] = useState(SUBSTRATE_OPTIONS[0]);
   const [roomSide, setRoomSide] = useState(ROOM_SIDE_OPTIONS[0]);
@@ -460,6 +461,9 @@ export function RoomDetailPage({ token }: Props) {
       setSurfaces((prev) =>
         prev.map((s) => (s.id === surfaceId ? { ...s, ...data.surface } : s))
       );
+      if (payload.substrate?.trim() && !substrateOptions.includes(payload.substrate.trim())) {
+        setSubstrateOptions((prev) => [...prev, payload.substrate!.trim()]);
+      }
       setEditingSurfaceId(null);
     } catch (_err) {
       setFormError("Unable to reach the server.");
@@ -613,7 +617,7 @@ export function RoomDetailPage({ token }: Props) {
                     onChange={(e) => setSubstrate(e.target.value)}
                     className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 touch-manipulation"
                   >
-                    {SUBSTRATE_OPTIONS.map((opt) => (
+                    {substrateOptions.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt}
                       </option>
@@ -744,7 +748,7 @@ export function RoomDetailPage({ token }: Props) {
                       isEditing={editingSurfaceId === s.id}
                       isUpdating={updatingSurfaceId === s.id}
                       isUploading={uploadingSurfaceId === s.id}
-                      substrateOptions={SUBSTRATE_OPTIONS}
+                      substrateOptions={substrateOptions}
                       onEdit={() => setEditingSurfaceId(s.id)}
                       onCancel={() => setEditingSurfaceId(null)}
                       onSave={handleSurfaceUpdate}
