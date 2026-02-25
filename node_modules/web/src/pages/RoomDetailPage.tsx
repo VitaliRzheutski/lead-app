@@ -28,7 +28,7 @@ type Surface = {
   first_photo_url?: string | null;
 };
 
-const COMPONENT_OPTIONS = ["Wall", "Door", "Floor", "Baseboard", "Window", "Closet", "Radiator", "Wall Molding"];
+const COMPONENT_OPTIONS = ["Wall", "Door", "Floor", "Baseboard", "Window", "Closet", "Closet Shelf", "Closet Shelf Support", "Radiator", "Wall Molding"];
 
 const ROOM_SIDE_EDIT_OPTIONS = ["A (back)", "B (left)", "C (Front)", "D (Right)", "N/A"];
 
