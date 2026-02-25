@@ -41,7 +41,7 @@ type SurfaceCardProps = {
   substrateOptions: string[];
   onEdit: () => void;
   onCancel: () => void;
-  onSave: (id: string, p: { xrf_reading?: number; result?: string; substrate?: string; notes?: string; room_side?: string }) => void;
+  onSave: (id: string, p: { xrf_reading?: number; result?: string; substrate?: string; notes?: string; room_side?: string; component?: string }) => void;
   onTakePhoto: (id: string) => void;
   onAddPhoto: (id: string) => void;
 };
@@ -61,6 +61,7 @@ function SurfaceCard({
 }: SurfaceCardProps) {
   const [editXrf, setEditXrf] = useState(String(surface.xrf_reading));
   const [editResult, setEditResult] = useState(surface.result);
+  const [editComponent, setEditComponent] = useState(surface.component);
   const [editSubstrate, setEditSubstrate] = useState(surface.substrate);
   const [editRoomSide, setEditRoomSide] = useState(surface.room_side);
   const [editNotes, setEditNotes] = useState(surface.notes ?? "");
@@ -69,11 +70,12 @@ function SurfaceCard({
     if (isEditing) {
       setEditXrf(String(surface.xrf_reading));
       setEditResult(surface.result);
+      setEditComponent(surface.component);
       setEditSubstrate(surface.substrate);
       setEditRoomSide(surface.room_side);
       setEditNotes(surface.notes ?? "");
     }
-  }, [isEditing, surface.id, surface.xrf_reading, surface.result, surface.substrate, surface.room_side, surface.notes]);
+  }, [isEditing, surface.id, surface.xrf_reading, surface.result, surface.component, surface.substrate, surface.room_side, surface.notes]);
 
   function handleSave() {
     const readingNum = Number(editXrf);
@@ -81,6 +83,7 @@ function SurfaceCard({
     onSave(surface.id, {
       xrf_reading: readingNum,
       result: editResult,
+      component: editComponent,
       substrate: editSubstrate,
       room_side: editRoomSide || undefined,
       notes: editNotes.trim() || undefined,
@@ -94,6 +97,19 @@ function SurfaceCard({
           {surface.room_equivalent}
         </div>
         <div className="grid grid-cols-2 gap-2">
+          <div className="col-span-2">
+            <label className="block text-[11px] font-medium text-slate-400 mb-0.5">Component</label>
+            <select
+              value={editComponent}
+              onChange={(e) => setEditComponent(e.target.value)}
+              className="w-full rounded border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm text-slate-50"
+            >
+              {COMPONENT_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+              <option value="None">None</option>
+            </select>
+          </div>
           <div>
             <label className="block text-[11px] font-medium text-slate-400 mb-0.5">XRF</label>
             <input
@@ -198,8 +214,10 @@ function SurfaceCard({
     );
   }
 
+  const isNone = surface.component === "None";
+
   return (
-    <div className="px-3 py-2.5 hover:bg-slate-800/30 transition-colors">
+    <div className={`px-3 py-2.5 transition-colors ${isNone ? "opacity-70 hover:bg-slate-800/20" : "hover:bg-slate-800/30"}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="font-medium text-slate-100 text-sm min-w-0">
           {surface.room_equivalent}
@@ -217,25 +235,32 @@ function SurfaceCard({
         </button>
       </div>
       <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] text-slate-400">
-        <span>{surface.component}</span>
+        <span>{isNone ? "—" : surface.component}</span>
         <span>·</span>
         <span>{surface.substrate}</span>
         <span>·</span>
         <span>{surface.room_side}</span>
+        {isNone && <span className="text-slate-500 italic">(not present)</span>}
       </div>
       <div className="flex flex-wrap items-center gap-2 mt-2">
-        <span className="font-mono text-slate-200 text-xs">
-          XRF {surface.xrf_reading}
-        </span>
-        <span
-          className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
-            surface.result === "positive"
-              ? "bg-red-500/20 text-red-300"
-              : "bg-emerald-500/20 text-emerald-300"
-          }`}
-        >
-          {surface.result}
-        </span>
+        {isNone ? (
+          <span className="text-slate-500 text-[11px]">—</span>
+        ) : (
+          <>
+            <span className="font-mono text-slate-200 text-xs">
+              XRF {surface.xrf_reading}
+            </span>
+            <span
+              className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                surface.result === "positive"
+                  ? "bg-red-500/20 text-red-300"
+                  : "bg-emerald-500/20 text-emerald-300"
+              }`}
+            >
+              {surface.result}
+            </span>
+          </>
+        )}
         {surface.notes && (
           <span className="text-slate-500 text-[11px] italic" title={surface.notes}>
             📝
@@ -437,7 +462,7 @@ export function RoomDetailPage({ token }: Props) {
 
   async function handleSurfaceUpdate(
     surfaceId: string,
-    payload: { xrf_reading?: number; result?: string; substrate?: string; notes?: string; room_side?: string }
+    payload: { xrf_reading?: number; result?: string; substrate?: string; notes?: string; room_side?: string; component?: string }
   ) {
     setFormError(null);
     setUpdatingSurfaceId(surfaceId);
