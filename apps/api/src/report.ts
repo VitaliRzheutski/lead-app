@@ -216,8 +216,21 @@ function renderMainReportHtml(
       lastRoom = s.room_name;
     }
     rowNum += 1;
-    const resultClass = String(s.result).toLowerCase() === "positive" ? "result-positive" : "result-negative";
-    bodyRows.push(`<tr>
+    const isNone = s.component === "None";
+    if (isNone) {
+      bodyRows.push(`<tr>
+      <td class="cell-num">${rowNum}</td>
+      <td>${escapeHtml(s.interior_exterior)}</td>
+      <td class="cell-num">${escapeHtml(s.floor)}</td>
+      <td>${escapeHtml(s.room_side)}</td>
+      <td class="cell-num">${escapeHtml(s.room_code ?? "")}</td>
+      <td>${escapeHtml(s.room_equivalent)}</td>
+      <td>${escapeHtml(s.component)}</td>
+      <td colspan="6" class="cell-none">None</td>
+    </tr>`);
+    } else {
+      const resultClass = String(s.result).toLowerCase() === "positive" ? "result-positive" : "result-negative";
+      bodyRows.push(`<tr>
       <td class="cell-num">${rowNum}</td>
       <td>${escapeHtml(s.interior_exterior)}</td>
       <td class="cell-num">${escapeHtml(s.floor)}</td>
@@ -232,9 +245,10 @@ function renderMainReportHtml(
       <td class="cell-num">${s.photo_count}</td>
       <td>${escapeHtml(s.notes ?? "")}</td>
     </tr>`);
-    picturesTotal += s.photo_count;
-    if (s.result === "positive") positiveCount += 1;
-    else negativeCount += 1;
+      picturesTotal += s.photo_count;
+      if (s.result === "positive") positiveCount += 1;
+      else negativeCount += 1;
+    }
   }
 
   const headerCells = [
@@ -336,6 +350,7 @@ export function renderReportHtml(data: {
     .report-table .col-result { width: 8%; }
     .report-table td.result-positive { background: #dc2626; color: #fff; font-weight: 600; }
     .report-table td.result-negative { background: #16a34a; color: #fff; font-weight: 600; }
+    .report-table td.cell-none { background: #e5e7eb; color: #374151; font-style: italic; text-align: center; }
     .report-table .col-roomname { width: 8%; }
     .report-table .col-pics { width: 5%; }
     .report-table .col-notes { width: 11%; }
