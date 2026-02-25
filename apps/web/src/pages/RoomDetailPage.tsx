@@ -114,14 +114,28 @@ function SurfaceCard({
           <div className="col-span-2">
             <label className="block text-[11px] font-medium text-slate-400 mb-0.5">Substrate</label>
             <select
-              value={editSubstrate}
-              onChange={(e) => setEditSubstrate(e.target.value)}
+              value={substrateOptions.includes(editSubstrate) ? editSubstrate : "__other__"}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "__other__") setEditSubstrate("");
+                else setEditSubstrate(v);
+              }}
               className="w-full rounded border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm text-slate-50"
             >
               {substrateOptions.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
+              <option value="__other__">Other…</option>
             </select>
+            {!substrateOptions.includes(editSubstrate) && (
+              <input
+                type="text"
+                value={editSubstrate}
+                onChange={(e) => setEditSubstrate(e.target.value)}
+                placeholder="Enter substrate"
+                className="mt-1.5 w-full rounded border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm text-slate-50 placeholder:text-slate-500"
+              />
+            )}
           </div>
           <div className="col-span-2">
             <label className="block text-[11px] font-medium text-slate-400 mb-0.5">Notes</label>
