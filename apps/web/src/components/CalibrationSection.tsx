@@ -57,7 +57,7 @@ export function CalibrationSection({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [calibrationTiming, setCalibrationTiming] = useState(TIMING_OPTIONS[0].value);
   const [timeOfCalibration, setTimeOfCalibration] = useState("12:00");
   const [xrfReading, setXrfReading] = useState("");
@@ -204,13 +204,21 @@ export function CalibrationSection({
             100
         ) / 100
       : null;
-  const dateTitle = calibration?.calibration_date
-    ? new Date(calibration.calibration_date + "Z").toLocaleDateString("en-US", {
-        month: "numeric",
-        day: "numeric",
-        year: "2-digit",
-      })
-    : "";
+  const dateTitle = (() => {
+    const raw = calibration?.calibration_date;
+    if (!raw) return "";
+    const dateStr =
+      typeof raw === "string" && (raw.endsWith("Z") || raw.includes("+") || raw.includes("T"))
+        ? raw
+        : `${raw}`.trim() + "Z";
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-US", {
+      month: "numeric",
+      day: "numeric",
+      year: "2-digit",
+    });
+  })();
 
   function CollapseHeader({
     title,
