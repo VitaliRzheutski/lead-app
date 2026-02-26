@@ -448,12 +448,17 @@ inspectionsRouter.post(
         res.status(404).json({ error: "Inspection not found." });
         return;
       }
-      const html = renderReportHtml({ ...data, inspection: data.inspection });
+      const baseUrl = process.env.API_BASE_URL || "http://localhost:3000";
+      const html = renderReportHtml({
+        ...data,
+        inspection: data.inspection,
+        photos: data.photos,
+        baseUrl,
+      });
       const pdfBytes = await generatePdfBytesFromHtml(html);
       const timestamp = Date.now();
       const objectKey = `inspections/${inspectionId}/reports/${timestamp}_report.pdf`;
       storeReportPdf(objectKey, pdfBytes);
-      const baseUrl = process.env.API_BASE_URL || "http://localhost:3000";
       const downloadUrl = `${baseUrl}/inspections/${inspectionId}/reports/${timestamp}/download`;
       res.status(201).json({
         reportId: String(timestamp),

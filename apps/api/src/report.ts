@@ -37,6 +37,21 @@ interface SurfaceReportRow {
   photo_count: number;
 }
 
+interface PhotoReportRow {
+  file_url: string;
+  room_name: string;
+  interior_exterior: string;
+  floor: string;
+  room_side: string;
+  room_code: string | null;
+  room_equivalent: string;
+  component: string;
+  substrate: string;
+  xrf_reading: number;
+  result: string;
+  notes: string | null;
+}
+
 const REPORTS_BASE = path.join(process.cwd(), "reports");
 const ROWS_PER_CAL_BLOCK = 6;
 
@@ -70,6 +85,7 @@ export async function loadReportData(
   calibration: CalibrationRow | null;
   calibrationEntries: CalibrationEntryRow[];
   surfaces: SurfaceReportRow[];
+  photos: PhotoReportRow[];
 }> {
   const inspectionResult = await query<InspectionRow>(
     `SELECT id, property_address, client_name, inspection_date, inspection_type
@@ -77,7 +93,7 @@ export async function loadReportData(
     [inspectionId, userId]
   );
   if (inspectionResult.rows.length === 0) {
-    return { inspection: null, calibration: null, calibrationEntries: [], surfaces: [] };
+    return { inspection: null, calibration: null, calibrationEntries: [], surfaces: [], photos: [] };
   }
   const inspection = inspectionResult.rows[0];
 
@@ -128,11 +144,45 @@ export async function loadReportData(
     [inspectionId]
   );
 
+  const photosResult = await query<PhotoReportRow>(
+    `SELECT p.file_url,
+            r.room_name, r.interior_exterior, r.floor,
+            s.room_side, s.room_code, s.room_equivalent, s.component, s.substrate,
+            s.xrf_reading, s.result, s.notes
+     FROM photos p
+     JOIN surfaces s ON s.id = p.surface_id
+     JOIN rooms r ON r.id = s.room_id
+     WHERE r.inspection_id = $1
+     ORDER BY r.name ASC,
+       CASE s.room_equivalent
+         WHEN 'Closet Door Panel' THEN 50
+         WHEN 'Closet Door Jamb' THEN 51
+         WHEN 'Closet Door Casing' THEN 52
+         WHEN 'Closet Shelf' THEN 53
+         WHEN 'Closet Shelf Support' THEN 54
+         WHEN 'Inside Closet' THEN 55
+         WHEN 'Bath Closet Door Panel' THEN 50
+         WHEN 'Bath Closet Door Jamb' THEN 51
+         WHEN 'Bath Closet Door Casing' THEN 52
+         WHEN 'Inside Bath Closet' THEN 55
+         WHEN 'Window Sill' THEN 60
+         WHEN 'Window Side Casing' THEN 61
+         WHEN 'Window Sash (Mid)' THEN 62
+         WHEN 'Bath Window Sill' THEN 60
+         WHEN 'Bath Window Side Casing' THEN 61
+         WHEN 'Bath Window Sash (Mid)' THEN 62
+         ELSE 0
+       END,
+       s.room_equivalent ASC, p.file_url ASC`,
+    [inspectionId]
+  );
+
   return {
     inspection,
     calibration,
     calibrationEntries,
     surfaces: surfacesResult.rows,
+    photos: photosResult.rows,
   };
 }
 
@@ -326,17 +376,69 @@ function renderMainReportHtml(
   </div>`;
 }
 
+function renderPhotosSection(photos: PhotoReportRow[], baseUrl: string): string {
+  if (photos.length === 0) return "";
+  const PHOTOS_PER_PAGE = 3;
+
+  const photoBlocks = photos.map((p) => {
+    const imgSrc = p.file_url.startsWith("http") ? p.file_url : `${baseUrl.replace(/\/$/, "")}${p.file_url.startsWith("/") ? "" : "/"}${p.file_url}`;
+    const lines: string[] = [
+      `Room: ${escapeHtml(p.room_name)}`,
+      `Interior / Exterior: ${escapeHtml(p.interior_exterior)}`,
+      `Floor: ${escapeHtml(p.floor)}`,
+      `Room Side: ${escapeHtml(p.room_side)}`,
+    ];
+    if (p.room_code?.trim()) lines.push(`Room #: ${escapeHtml(p.room_code.trim())}`);
+    lines.push(
+      `Room Equivalent: ${escapeHtml(p.room_equivalent)}`,
+      `Component: ${escapeHtml(p.component)}`,
+      `Substrate: ${escapeHtml(p.substrate)}`,
+      `XRF Reading: ${Number(p.xrf_reading).toFixed(1)} (X.X mg / cm²)`,
+      `Result: ${escapeHtml(p.result)}`
+    );
+    if (p.notes?.trim()) lines.push(`Notes: ${escapeHtml(p.notes.trim())}`);
+    const descHtml = lines.map((line) => `<div class="photo-desc-line">${line}</div>`).join("");
+    return `
+    <div class="photo-block">
+      <div class="photo-desc-box">${descHtml}</div>
+      <img src="${escapeHtml(imgSrc)}" alt="" class="photo-img" />
+    </div>`;
+  });
+
+  const pages: string[] = [];
+  for (let i = 0; i < photoBlocks.length; i += PHOTOS_PER_PAGE) {
+    const chunk = photoBlocks.slice(i, i + PHOTOS_PER_PAGE);
+    const isLastPage = i + PHOTOS_PER_PAGE >= photoBlocks.length;
+    pages.push(`
+    <div class="photos-page${isLastPage ? "" : " photos-page-break"}">
+      ${i === 0 ? '<h2 class="photos-section-title">Photos</h2>' : ""}
+      <div class="photos-grid">${chunk.join("")}</div>
+    </div>`);
+  }
+
+  return `
+  <div class="photos-section">
+    ${pages.join("")}
+  </div>`;
+}
+
 export function renderReportHtml(data: {
   inspection: InspectionRow;
   calibration: CalibrationRow | null;
   calibrationEntries: CalibrationEntryRow[];
   surfaces: SurfaceReportRow[];
+  photos?: PhotoReportRow[];
+  baseUrl?: string;
 }): string {
   const calibrationHtml = renderCalibrationHtml(
     data.calibration,
     data.calibrationEntries
   );
   const mainHtml = renderMainReportHtml(data.inspection, data.surfaces);
+  const photosHtml = renderPhotosSection(
+    data.photos ?? [],
+    data.baseUrl ?? ""
+  );
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -378,11 +480,23 @@ export function renderReportHtml(data: {
     .report-summary { margin-top: 16px; }
     .summary-table { border-collapse: collapse; }
     .summary-table th, .summary-table td { border: 1px solid #000; padding: 6px 10px; background: #f2f2f2; }
+    .photos-section { margin-top: 24px; page-break-before: always; }
+    .photos-section-title { font-size: 16px; margin: 0 0 12px 0; }
+    .photos-page { margin-bottom: 16px; }
+    .photos-page-break { page-break-after: always; }
+    .photos-grid { display: table; width: 100%; table-layout: fixed; }
+    .photos-grid .photo-block { display: table-cell; width: 33.33%; vertical-align: top; padding: 0 6px 12px 0; page-break-inside: avoid; }
+    .photo-block { box-sizing: border-box; }
+    .photo-desc-box { border: 1px solid #000; padding: 6px 8px; margin-bottom: 4px; background: #f8f8f8; font-size: 9px; line-height: 1.35; }
+    .photo-desc-line { margin-bottom: 2px; }
+    .photo-desc-line:last-child { margin-bottom: 0; }
+    .photo-img { max-width: 100%; max-height: 200px; display: block; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
   ${calibrationHtml}
   ${mainHtml}
+  ${photosHtml}
 </body>
 </html>`;
 }
