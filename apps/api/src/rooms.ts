@@ -131,7 +131,27 @@ roomsRouter.get(
            (SELECT file_url FROM photos WHERE photos.surface_id = s.id ORDER BY created_at ASC LIMIT 1) AS first_photo_url
          FROM surfaces s
          WHERE s.room_id = $1
-         ORDER BY s.room_side ASC, s.component ASC`,
+         ORDER BY
+           CASE s.room_equivalent
+             WHEN 'Closet Door Panel' THEN 50
+             WHEN 'Closet Door Jamb' THEN 51
+             WHEN 'Closet Door Casing' THEN 52
+             WHEN 'Closet Shelf' THEN 53
+             WHEN 'Closet Shelf Support' THEN 54
+             WHEN 'Inside Closet' THEN 55
+             WHEN 'Bath Closet Door Panel' THEN 50
+             WHEN 'Bath Closet Door Jamb' THEN 51
+             WHEN 'Bath Closet Door Casing' THEN 52
+             WHEN 'Inside Bath Closet' THEN 55
+             WHEN 'Window Sill' THEN 60
+             WHEN 'Window Side Casing' THEN 61
+             WHEN 'Window Sash (Mid)' THEN 62
+             WHEN 'Bath Window Sill' THEN 60
+             WHEN 'Bath Window Side Casing' THEN 61
+             WHEN 'Bath Window Sash (Mid)' THEN 62
+             ELSE 0
+           END,
+           s.room_side ASC, s.room_equivalent ASC`,
         [roomId]
       );
 

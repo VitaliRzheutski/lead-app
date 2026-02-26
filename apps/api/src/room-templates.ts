@@ -53,7 +53,7 @@ const BEDROOM: { room_side: string; room_equivalent: string; component: string; 
   wall("Bedroom Wall", 0), wall("Bedroom Wall", 1), wall("Bedroom Wall", 2), wall("Bedroom Wall", 3),
   door("Bedroom Door Panel"), door("Bedroom Door Jamb"), door("Bedroom Door Casing"),
   door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
-  closet("Inside Closet"), shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"),
+  shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"), closet("Inside Closet"),
   ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
   window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
 ];
@@ -62,7 +62,7 @@ const BATHROOM: { room_side: string; room_equivalent: string; component: string;
   wall("Bath Wall", 0), wall("Bath Wall", 1), wall("Bath Wall", 2), wall("Bath Wall", 3),
   door("Bath Door Panel"), door("Bath Door Jamb"), door("Bath Door Casing"),
   door("Bath Closet Door Panel"), door("Bath Closet Door Jamb"), door("Bath Closet Door Casing"),
-  closet("Inside Bath Closet"), shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"),
+  shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"), closet("Inside Bath Closet"),
   ceiling("Bath Ceiling"), floor("Bath Floor"), baseboard("Baseboard"), radiator("Radiator"),
   window("Bath Window Sill"), window("Bath Window Side Casing"), window("Bath Window Sash (Mid)"),
 ];
@@ -79,7 +79,7 @@ const LIVING_ROOM: { room_side: string; room_equivalent: string; component: stri
   wall("Living Room Wall", 0), wall("Living Room Wall", 1), wall("Living Room Wall", 2), wall("Living Room Wall", 3),
   door("Door Panel"), door("Door Jamb"), door("Door Casing"),
   door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
-  closet("Inside Closet"), shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"),
+  shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"), closet("Inside Closet"),
   ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
   window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
 ];
@@ -88,7 +88,7 @@ const DINING_ROOM: { room_side: string; room_equivalent: string; component: stri
   wall("Dining Room Wall", 0), wall("Dining Room Wall", 1), wall("Dining Room Wall", 2), wall("Dining Room Wall", 3),
   door("Door Panel"), door("Door Jamb"), door("Door Casing"),
   door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
-  closet("Inside Closet"), shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"),
+  shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"), closet("Inside Closet"),
   ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
   window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
 ];
@@ -97,7 +97,7 @@ const FOYER: { room_side: string; room_equivalent: string; component: string; su
   wall("Foyer Wall", 0), wall("Foyer Wall", 1), wall("Foyer Wall", 2), wall("Foyer Wall", 3),
   door("Front Door Panel"), door("Front Door Jamb"), door("Front Door Casing"),
   door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
-  closet("Inside Closet"), shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"),
+  shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"), closet("Inside Closet"),
   ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
 ];
 
@@ -105,14 +105,14 @@ const ENTRANCE_HALLWAY: { room_side: string; room_equivalent: string; component:
   wall("Entrance Hallway Wall", 0), wall("Entrance Hallway Wall", 1), wall("Entrance Hallway Wall", 2), wall("Entrance Hallway Wall", 3),
   door("Door Panel"), door("Door Jamb"), door("Door Casing"),
   door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
-  closet("Inside Closet"), shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"),
+  shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"), closet("Inside Closet"),
   ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
 ];
 
 const HALLWAY: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
   wall("Hallway Wall", 0), wall("Hallway Wall", 1), wall("Hallway Wall", 2), wall("Hallway Wall", 3),
   door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
-  closet("Inside Closet"), shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"),
+  shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"), closet("Inside Closet"),
   ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
 ];
 
@@ -126,14 +126,14 @@ const COMMON_AREA: { room_side: string; room_equivalent: string; component: stri
 const CLOSET: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
   wall("Closet Wall", 0), wall("Closet Wall", 1), wall("Closet Wall", 2), wall("Closet Wall", 3),
   door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
-  closet("Inside Closet"), shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"),
+  shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"), closet("Inside Closet"),
   ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"),
 ];
 
 const WALK_IN_CLOSET: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
   wall("Walk-In Closet Wall", 0), wall("Walk-In Closet Wall", 1), wall("Walk-In Closet Wall", 2), wall("Walk-In Closet Wall", 3),
   door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
-  closet("Inside Closet"), shelf("Closet Shelf"), shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"),
+  shelf("Closet Shelf"), shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"), closet("Inside Closet"),
   ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"),
 ];
 
@@ -162,7 +162,7 @@ const OFFICE: { room_side: string; room_equivalent: string; component: string; s
   wall("Office Wall", 0), wall("Office Wall", 1), wall("Office Wall", 2), wall("Office Wall", 3),
   door("Door Panel"), door("Door Jamb"), door("Door Casing"),
   door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
-  closet("Inside Closet"), shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"),
+  shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"), closet("Inside Closet"),
   ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
   window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
 ];
@@ -171,7 +171,7 @@ const NURSERY: { room_side: string; room_equivalent: string; component: string; 
   wall("Nursery Wall", 0), wall("Nursery Wall", 1), wall("Nursery Wall", 2), wall("Nursery Wall", 3),
   door("Door Panel"), door("Door Jamb"), door("Door Casing"),
   door("Closet Door Panel"), door("Closet Door Jamb"), door("Closet Door Casing"),
-  closet("Inside Closet"), shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"),
+  shelf("Closet Shelf"), shelfSupport("Closet Shelf Support"), closet("Inside Closet"),
   ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
   window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
 ];
