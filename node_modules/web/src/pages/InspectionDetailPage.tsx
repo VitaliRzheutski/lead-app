@@ -349,6 +349,7 @@ export function InspectionDetailPage({ token }: Props) {
       return;
     }
 
+    setFormError(null);
     try {
       const response = await fetch(`${API_URL}/rooms/${roomId}`, {
         method: "DELETE",
@@ -358,12 +359,14 @@ export function InspectionDetailPage({ token }: Props) {
       });
 
       if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setFormError(data?.error ?? "Failed to delete room.");
         return;
       }
 
       setRooms(rooms.filter((r) => r.id !== roomId));
     } catch (_err) {
-      // Silent fail
+      setFormError("Unable to reach the server.");
     }
   }
 
@@ -509,6 +512,12 @@ export function InspectionDetailPage({ token }: Props) {
                     )
                   )}
                 </div>
+
+                {formError && !showAddForm && (
+                  <p className="text-xs text-red-400 bg-red-950/40 border border-red-900 rounded px-2 py-1.5">
+                    {formError}
+                  </p>
+                )}
 
                 {showAddForm && (
                   <form
