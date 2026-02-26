@@ -281,11 +281,20 @@ export function InspectionDetailPage({ token }: Props) {
     }
   }
 
+  function getNextRoomName(type: string, existingRooms: Room[]): string {
+    if (type === "Other") return customRoomName.trim();
+    const sameType = existingRooms.filter(
+      (r) => r.room_name === type || r.room_name.startsWith(type + " ")
+    ).length;
+    return sameType === 0 ? `${type} 1` : `${type} ${sameType + 1}`;
+  }
+
   async function handleAddRoom(event: FormEvent) {
     event.preventDefault();
     setFormError(null);
 
-    const nameToSend = roomType === "Other" ? customRoomName.trim() : roomType;
+    const nameToSend =
+      roomType === "Other" ? customRoomName.trim() : getNextRoomName(roomType, rooms);
     if (!nameToSend) {
       setFormError(roomType === "Other" ? "Room name is required." : "Room type is required.");
       return;
@@ -530,6 +539,11 @@ export function InspectionDetailPage({ token }: Props) {
                         ))}
                       </select>
                     </div>
+                    {roomType !== "Other" && (
+                      <p className="text-[11px] text-slate-500">
+                        Will be saved as: <span className="text-slate-400">{getNextRoomName(roomType, rooms)}</span>
+                      </p>
+                    )}
                     {roomType === "Other" && (
                       <div className="space-y-1.5">
                         <label

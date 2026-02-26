@@ -219,6 +219,9 @@ export function getSurfacesForRoomType(roomName: string): { room_side: string; r
   const key = roomName.trim();
   if (!key) return null;
   if (TEMPLATES[key]) return TEMPLATES[key];
+  // "Bedroom 1", "Bathroom 2" etc. -> look up by base type "Bedroom", "Bathroom"
+  const baseType = key.replace(/\s+\d+$/, "");
+  if (baseType !== key && TEMPLATES[baseType]) return TEMPLATES[baseType];
   return null;
 }
 
