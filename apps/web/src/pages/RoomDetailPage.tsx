@@ -339,6 +339,7 @@ export function RoomDetailPage({ token }: Props) {
   const takePhotoInputRef = useRef<HTMLInputElement>(null);
 
   const [substrateOptions, setSubstrateOptions] = useState<string[]>(() => [...SUBSTRATE_OPTIONS]);
+  const [componentOptions, setComponentOptions] = useState<string[]>(() => [...COMPONENT_OPTIONS]);
   const [component, setComponent] = useState(COMPONENT_OPTIONS[0]);
   const [substrate, setSubstrate] = useState(SUBSTRATE_OPTIONS[0]);
   const [roomSide, setRoomSide] = useState(ROOM_SIDE_OPTIONS[0]);
@@ -512,6 +513,16 @@ export function RoomDetailPage({ token }: Props) {
       return;
     }
 
+    if (!component.trim()) {
+      setFormError("Component is required.");
+      return;
+    }
+
+    if (!substrate.trim()) {
+      setFormError("Substrate is required.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const response = await fetch(
@@ -526,8 +537,8 @@ export function RoomDetailPage({ token }: Props) {
             room_side: roomSide,
             room_code: roomCode.trim() || undefined,
             room_equivalent: roomEquivalent.trim(),
-            component,
-            substrate,
+            component: component.trim(),
+            substrate: substrate.trim(),
             xrf_reading: readingNum,
             notes: notes.trim() || undefined,
           }),
@@ -539,6 +550,12 @@ export function RoomDetailPage({ token }: Props) {
         return;
       }
       setSurfaces((prev) => [...prev, data.surface]);
+      if (component.trim() && !componentOptions.includes(component.trim())) {
+        setComponentOptions((prev) => [...prev, component.trim()]);
+      }
+      if (substrate.trim() && !substrateOptions.includes(substrate.trim())) {
+        setSubstrateOptions((prev) => [...prev, substrate.trim()]);
+      }
       setXrfReading("");
       setRoomCode("");
       setRoomEquivalent("");
@@ -622,24 +639,42 @@ export function RoomDetailPage({ token }: Props) {
                     Component
                   </label>
                   <select
-                    value={component}
-                    onChange={(e) => setComponent(e.target.value)}
+                    value={componentOptions.includes(component) ? component : "__other__"}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "__other__") setComponent("");
+                      else setComponent(v);
+                    }}
                     className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 touch-manipulation"
                   >
-                    {COMPONENT_OPTIONS.map((opt) => (
+                    {componentOptions.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt}
                       </option>
                     ))}
+                    <option value="__other__">Other…</option>
                   </select>
+                  {!componentOptions.includes(component) && (
+                    <input
+                      type="text"
+                      value={component}
+                      onChange={(e) => setComponent(e.target.value)}
+                      placeholder="Enter component"
+                      className="mt-1.5 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-200 mb-1">
                     Substrate
                   </label>
                   <select
-                    value={substrate}
-                    onChange={(e) => setSubstrate(e.target.value)}
+                    value={substrateOptions.includes(substrate) ? substrate : "__other__"}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "__other__") setSubstrate("");
+                      else setSubstrate(v);
+                    }}
                     className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 touch-manipulation"
                   >
                     {substrateOptions.map((opt) => (
@@ -647,7 +682,17 @@ export function RoomDetailPage({ token }: Props) {
                         {opt}
                       </option>
                     ))}
+                    <option value="__other__">Other…</option>
                   </select>
+                  {!substrateOptions.includes(substrate) && (
+                    <input
+                      type="text"
+                      value={substrate}
+                      onChange={(e) => setSubstrate(e.target.value)}
+                      placeholder="Enter substrate"
+                      className="mt-1.5 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-sm text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-200 mb-1">
