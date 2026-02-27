@@ -18,60 +18,125 @@ type Inspection = {
   created_at: string;
 };
 
+type Building = {
+  id: string;
+  name: string;
+  created_at: string;
+  inspections: Inspection[];
+};
+
+type BuildingsResponse = {
+  buildings: Building[];
+  unassigned: Inspection[];
+};
+
 export function DashboardPage({ token, onLogout }: Props) {
   const navigate = useNavigate();
-  const [inspections, setInspections] = useState<Inspection[]>([]);
+  const [data, setData] = useState<BuildingsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [newBuildingName, setNewBuildingName] = useState("");
+  const [isAddingBuilding, setIsAddingBuilding] = useState(false);
+  const [isSubmittingBuilding, setIsSubmittingBuilding] = useState(false);
+  const [addingCommonAreaBuildingId, setAddingCommonAreaBuildingId] = useState<string | null>(null);
+
+  async function loadBuildings() {
+    setError(null);
+    try {
+      const response = await fetch(`${API_URL}/buildings`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        setError(json?.error ?? "Failed to load buildings.");
+        return;
+      }
+      setData({
+        buildings: json.buildings ?? [],
+        unassigned: json.unassigned ?? [],
+      });
+    } catch (_err) {
+      setError("Unable to reach the server. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
-
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`${API_URL}/inspections`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          setError(data?.error ?? "Failed to load inspections.");
-          return;
-        }
-
-        if (!cancelled) {
-          setInspections(data.inspections ?? []);
-        }
-      } catch (_err) {
-        if (!cancelled) {
-          setError("Unable to reach the server. Please try again.");
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    load();
-
+    setIsLoading(true);
+    loadBuildings().then(() => {
+      if (!cancelled) setIsLoading(false);
+    });
     return () => {
       cancelled = true;
     };
   }, [token]);
 
+  async function handleAddBuilding(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newBuildingName.trim()) return;
+    setIsSubmittingBuilding(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_URL}/buildings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: newBuildingName.trim() }),
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        setError(json?.error ?? "Failed to create building.");
+        return;
+      }
+      setNewBuildingName("");
+      setIsAddingBuilding(false);
+      await loadBuildings();
+    } catch (_err) {
+      setError("Unable to reach the server. Please try again.");
+    } finally {
+      setIsSubmittingBuilding(false);
+    }
+  }
+
   function handleLogout() {
     clearToken();
-    if (onLogout) {
-      onLogout();
-    }
+    if (onLogout) onLogout();
     navigate("/login", { replace: true });
+  }
+
+  function goToNewInspection(buildingId?: string) {
+    navigate("/inspections/new", { state: buildingId ? { buildingId } : undefined });
+  }
+
+  async function handleAddCommonArea(buildingId: string) {
+    setAddingCommonAreaBuildingId(buildingId);
+    setError(null);
+    try {
+      const response = await fetch(`${API_URL}/inspections/common-area`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ building_id: buildingId }),
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        setError(json?.error ?? "Failed to create common area.");
+        return;
+      }
+      const id = json?.inspection?.id;
+      if (id) navigate(`/inspections/${id}`);
+      await loadBuildings();
+    } catch (_err) {
+      setError("Unable to reach the server. Please try again.");
+    } finally {
+      setAddingCommonAreaBuildingId(null);
+    }
   }
 
   return (
@@ -91,13 +156,20 @@ export function DashboardPage({ token, onLogout }: Props) {
 
       <section className="flex-1 px-4 py-6 flex justify-center">
         <div className="w-full max-w-lg space-y-4">
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-2 flex-wrap">
             <button
               type="button"
-              onClick={() => navigate("/inspections/new")}
+              onClick={() => goToNewInspection()}
               className="inline-flex items-center rounded-lg bg-sky-500 px-3 py-2 text-xs font-medium text-slate-950 hover:bg-sky-400 transition-colors"
             >
               + New inspection
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAddingBuilding(true)}
+              className="inline-flex items-center rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-slate-700 transition-colors"
+            >
+              + Add building
             </button>
           </div>
 
@@ -107,7 +179,7 @@ export function DashboardPage({ token, onLogout }: Props) {
             </h2>
 
             {isLoading && (
-              <p className="text-xs text-slate-400">Loading inspections...</p>
+              <p className="text-xs text-slate-400">Loading...</p>
             )}
 
             {error && !isLoading && (
@@ -116,61 +188,176 @@ export function DashboardPage({ token, onLogout }: Props) {
               </p>
             )}
 
-            {!isLoading && !error && inspections.length === 0 && (
-              <p className="text-xs text-slate-400">
-                You do not have any inspections yet. Start by creating one.
-              </p>
+            {isAddingBuilding && (
+              <form onSubmit={handleAddBuilding} className="flex gap-2 items-end pb-2 border-b border-slate-800">
+                <div className="flex-1 min-w-0">
+                  <label htmlFor="newBuildingName" className="sr-only">Building name</label>
+                  <input
+                    id="newBuildingName"
+                    type="text"
+                    value={newBuildingName}
+                    onChange={(e) => setNewBuildingName(e.target.value)}
+                    placeholder="Building name"
+                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-50 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    autoFocus
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSubmittingBuilding || !newBuildingName.trim()}
+                  className="rounded-lg bg-sky-500 px-3 py-2 text-xs font-medium text-slate-950 hover:bg-sky-400 disabled:opacity-50"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setIsAddingBuilding(false); setNewBuildingName(""); }}
+                  className="rounded-lg border border-slate-600 px-3 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+              </form>
             )}
 
-            {!isLoading && !error && inspections.length > 0 && (
-              <ul className="space-y-2">
-                {inspections.map((inspection) => (
-                  <li key={inspection.id}>
-                    <div className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 hover:border-slate-700 transition-colors">
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/inspections/${inspection.id}`)}
-                        className="w-full text-left"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-slate-50 truncate">
-                              {inspection.property_address}
-                            </p>
-                            <p className="text-[11px] text-slate-400 truncate">
-                              {inspection.client_name} •{" "}
-                              <span className="font-mono">
-                                {inspection.inspection_date}
-                              </span>
-                            </p>
-                          </div>
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                              inspection.status === "completed"
-                                ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
-                                : "bg-amber-500/10 text-amber-300 border border-amber-500/40"
-                            }`}
-                          >
-                            {inspection.status}
-                          </span>
-                        </div>
-                      </button>
-                      <div className="mt-2 pt-2 border-t border-slate-800/80 flex justify-end">
+            {!isLoading && !error && data && (
+              <>
+                {data.buildings.length === 0 && data.unassigned.length === 0 && (
+                  <p className="text-xs text-slate-400">
+                    You do not have any inspections yet. Start by creating one or add a building first.
+                  </p>
+                )}
+
+                {data.buildings.map((building) => (
+                  <div key={building.id} className="space-y-2">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
+                        {building.name}
+                      </h3>
+                      <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            navigate(`/inspections/${inspection.id}/calibration`);
-                          }}
-                          className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
+                          onClick={() => handleAddCommonArea(building.id)}
+                          disabled={addingCommonAreaBuildingId !== null}
+                          className="text-[11px] font-medium text-slate-400 hover:text-slate-300 disabled:opacity-50"
                         >
-                          Calibration test
+                          {addingCommonAreaBuildingId === building.id ? "Adding…" : "+ Add common area"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => goToNewInspection(building.id)}
+                          className="text-[11px] font-medium text-sky-400 hover:text-sky-300"
+                        >
+                          + Add apartment
                         </button>
                       </div>
                     </div>
-                  </li>
+                    <ul className="space-y-2 pl-2 border-l-2 border-slate-700">
+                      {building.inspections.length === 0 ? (
+                        <li className="text-xs text-slate-500 py-1">No apartments yet</li>
+                      ) : (
+                        building.inspections.map((inspection) => (
+                          <li key={inspection.id}>
+                            <div className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 hover:border-slate-700 transition-colors">
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/inspections/${inspection.id}`)}
+                                className="w-full text-left"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-slate-50 truncate">
+                                      {inspection.property_address}
+                                    </p>
+                                    <p className="text-[11px] text-slate-400 truncate">
+                                      {inspection.client_name} •{" "}
+                                      <span className="font-mono">{inspection.inspection_date}</span>
+                                    </p>
+                                  </div>
+                                  <span
+                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium shrink-0 ${
+                                      inspection.status === "completed"
+                                        ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
+                                        : "bg-amber-500/10 text-amber-300 border border-amber-500/40"
+                                    }`}
+                                  >
+                                    {inspection.status}
+                                  </span>
+                                </div>
+                              </button>
+                              <div className="mt-2 pt-2 border-t border-slate-800/80 flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    navigate(`/inspections/${inspection.id}/calibration`);
+                                  }}
+                                  className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
+                                >
+                                  Calibration test
+                                </button>
+                              </div>
+                            </div>
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+
+                {data.unassigned.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-slate-800">
+                    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                      Other (no building)
+                    </h3>
+                    <ul className="space-y-2">
+                      {data.unassigned.map((inspection) => (
+                        <li key={inspection.id}>
+                          <div className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 hover:border-slate-700 transition-colors">
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/inspections/${inspection.id}`)}
+                              className="w-full text-left"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-slate-50 truncate">
+                                    {inspection.property_address}
+                                  </p>
+                                  <p className="text-[11px] text-slate-400 truncate">
+                                    {inspection.client_name} •{" "}
+                                    <span className="font-mono">{inspection.inspection_date}</span>
+                                  </p>
+                                </div>
+                                <span
+                                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                                    inspection.status === "completed"
+                                      ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
+                                      : "bg-amber-500/10 text-amber-300 border border-amber-500/40"
+                                  }`}
+                                >
+                                  {inspection.status}
+                                </span>
+                              </div>
+                            </button>
+                            <div className="mt-2 pt-2 border-t border-slate-800/80 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  navigate(`/inspections/${inspection.id}/calibration`);
+                                }}
+                                className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
+                              >
+                                Calibration test
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -178,4 +365,3 @@ export function DashboardPage({ token, onLogout }: Props) {
     </main>
   );
 }
-

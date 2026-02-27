@@ -56,6 +56,15 @@ const ROOM_TYPE_OPTIONS = [
   "Other",
 ];
 
+const COMMON_AREA_ROOM_OPTIONS = [
+  "Building Entrance Foyer",
+  "1st Floor Hallway / Stairwell",
+  "2nd Floor Hallway / Stairwell",
+  "3rd Floor Hallway / Stairwell",
+  "4th Floor Hallway / Stairwell",
+  "Other",
+];
+
 export function InspectionDetailPage({ token }: Props) {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -293,8 +302,28 @@ export function InspectionDetailPage({ token }: Props) {
     event.preventDefault();
     setFormError(null);
 
-    const nameToSend =
-      roomType === "Other" ? customRoomName.trim() : getNextRoomName(roomType, rooms);
+    const isCommonArea = inspection?.inspection_type === "Common area";
+    let nameToSend: string;
+    let roomNameToSend: string;
+
+    if (roomType === "Other") {
+      nameToSend = customRoomName.trim();
+      roomNameToSend = nameToSend;
+    } else if (isCommonArea && roomType === "Building Entrance Foyer") {
+      if (!floor.trim()) {
+        setFormError("Floor is required.");
+        return;
+      }
+      nameToSend = `${floor.trim()} Building Entrance Foyer`;
+      roomNameToSend = "Building Entrance Foyer";
+    } else if (isCommonArea && COMMON_AREA_ROOM_OPTIONS.includes(roomType) && roomType !== "Other") {
+      nameToSend = roomType;
+      roomNameToSend = roomType;
+    } else {
+      nameToSend = getNextRoomName(roomType, rooms);
+      roomNameToSend = nameToSend;
+    }
+
     if (!nameToSend) {
       setFormError(roomType === "Other" ? "Room name is required." : "Room type is required.");
       return;
@@ -319,7 +348,7 @@ export function InspectionDetailPage({ token }: Props) {
             name: nameToSend,
             interior_exterior: interiorExterior,
             floor: floor.trim(),
-            room_name: nameToSend,
+            room_name: roomNameToSend,
           }),
         }
       );
@@ -332,9 +361,9 @@ export function InspectionDetailPage({ token }: Props) {
       }
 
       setRooms([...rooms, data.room]);
-      setRoomType("Bedroom");
+      setRoomType(isCommonArea ? "Building Entrance Foyer" : "Bedroom");
       setCustomRoomName("");
-      setFloor("");
+      setFloor(isCommonArea ? "1st Floor" : "");
       setInteriorExterior("interior");
       setShowAddForm(false);
     } catch (_err) {
@@ -494,16 +523,22 @@ export function InspectionDetailPage({ token }: Props) {
               <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-semibold text-slate-100">
-                    Rooms
+                    {inspection?.inspection_type === "Common area" ? "Common Area" : "Rooms"}
                   </h2>
                   {!showAddForm && (
-                    hasCalibration ? (
+                    (hasCalibration || inspection?.inspection_type === "Common area") ? (
                       <button
                         type="button"
-                        onClick={() => setShowAddForm(true)}
+                        onClick={() => {
+                          setShowAddForm(true);
+                          if (inspection?.inspection_type === "Common area") {
+                            setRoomType("Building Entrance Foyer");
+                            setFloor("1st Floor");
+                          }
+                        }}
                         className="inline-flex items-center rounded-lg bg-sky-500 px-2.5 py-1.5 text-xs font-medium text-slate-950 hover:bg-sky-400 transition-colors"
                       >
-                        + Add room
+                        {inspection?.inspection_type === "Common area" ? "+ Add area" : "+ Add room"}
                       </button>
                     ) : (
                       <span className="text-xs text-slate-500">
@@ -535,22 +570,36 @@ export function InspectionDetailPage({ token }: Props) {
                         htmlFor="roomType"
                         className="block text-xs font-medium text-slate-200"
                       >
-                        Room
+                        {inspection?.inspection_type === "Common area" ? "Area" : "Room"}
                       </label>
                       <select
                         id="roomType"
                         className="w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
                         value={roomType}
-                        onChange={(e) => setRoomType(e.target.value)}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setRoomType(v);
+                          if (inspection?.inspection_type === "Common area") {
+                            if (v.startsWith("1st ")) setFloor("1st Floor");
+                            else if (v.startsWith("2nd ")) setFloor("2nd Floor");
+                            else if (v.startsWith("3rd ")) setFloor("3rd Floor");
+                            else if (v.startsWith("4th ")) setFloor("4th Floor");
+                          }
+                        }}
                       >
-                        {ROOM_TYPE_OPTIONS.map((opt) => (
+                        {(inspection?.inspection_type === "Common area" ? COMMON_AREA_ROOM_OPTIONS : ROOM_TYPE_OPTIONS).map((opt) => (
                           <option key={opt} value={opt}>{opt}</option>
                         ))}
                       </select>
                     </div>
-                    {roomType !== "Other" && (
+                    {roomType !== "Other" && inspection?.inspection_type !== "Common area" && (
                       <p className="text-[11px] text-slate-500">
                         Will be saved as: <span className="text-slate-400">{getNextRoomName(roomType, rooms)}</span>
+                      </p>
+                    )}
+                    {roomType !== "Other" && inspection?.inspection_type === "Common area" && roomType === "Building Entrance Foyer" && (
+                      <p className="text-[11px] text-slate-500">
+                        Will be saved as: <span className="text-slate-400">{floor.trim() || "—"} Building Entrance Foyer</span>
                       </p>
                     )}
                     {roomType === "Other" && (

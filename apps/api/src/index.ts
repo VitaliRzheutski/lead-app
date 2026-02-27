@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { authRouter } from "./auth";
+import { buildingsRouter } from "./buildings";
 import { inspectionsRouter } from "./inspections";
 import { roomsRouter } from "./rooms";
 import { surfacesRouter } from "./surfaces";
@@ -50,6 +51,7 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 app.use("/auth", authRouter);
+app.use("/buildings", buildingsRouter);
 app.use("/inspections", inspectionsRouter);
 app.use("/rooms", roomsRouter);
 app.use("/surfaces", surfacesRouter);

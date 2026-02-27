@@ -48,6 +48,18 @@ function shelfItem(equivalent: string): { room_side: string; room_equivalent: st
 function stair(equivalent: string): { room_side: string; room_equivalent: string; component: string; substrate: string } {
   return { room_side: "N/A", room_equivalent: equivalent, component: "Floor", substrate: "Wood" };
 }
+function floorTile(equivalent: string): { room_side: string; room_equivalent: string; component: string; substrate: string } {
+  return { room_side: "N/A", room_equivalent: equivalent, component: "Floor", substrate: "Tile" };
+}
+function doorMetal(equivalent: string): { room_side: string; room_equivalent: string; component: string; substrate: string } {
+  return { room_side: "N/A", room_equivalent: equivalent, component: "Door", substrate: "Metal" };
+}
+function stairs(equivalent: string): { room_side: string; room_equivalent: string; component: string; substrate: string } {
+  return { room_side: "N/A", room_equivalent: equivalent, component: "Stairs", substrate: "Wood" };
+}
+function crownMolding(equivalent: string): { room_side: string; room_equivalent: string; component: string; substrate: string } {
+  return { room_side: "N/A", room_equivalent: equivalent, component: "Crown Molding", substrate: "Wood" };
+}
 
 const BEDROOM: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
   wall("Bedroom Wall", 0), wall("Bedroom Wall", 1), wall("Bedroom Wall", 2), wall("Bedroom Wall", 3),
@@ -121,6 +133,24 @@ const COMMON_AREA: { room_side: string; room_equivalent: string; component: stri
   door("Door Panel"), door("Door Jamb"), door("Door Casing"),
   ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
   window("Window Sill"), window("Window Side Casing"), window("Window Sash (Mid)"),
+];
+
+// Preset common areas (screenshot): Building Entrance Foyer + 1st Floor Hallway / Stairwell
+const BUILDING_ENTRANCE_FOYER: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Entrance way Wall", 0), wall("Entrance way Wall", 1), wall("Entrance way Wall", 2), wall("Entrance way Wall", 3),
+  floorTile("Entrance Floor"),
+  ceiling("Entrance way Ceiling"),
+  doorMetal("Front Door Panel"), doorMetal("Front Door Jamb"), doorMetal("Front Door Casing"),
+];
+
+const FIRST_FLOOR_HALLWAY_STAIRWELL: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  baseboard("Hallway Baseboard"),
+  crownMolding("Crown Molding"),
+  floorTile("Floor"),
+  radiator("Radiator"),
+  door("Door Panel"), door("Door Jamb"), door("Door Casing"),
+  stairs("Stairwell Handrail"), stairs("Stairwell Step / Tread"), stairs("Stairwell Stringer"),
+  stairs("Balusters"), stairs("Stairwell Step Riser"), stairs("Banister of Stairs"),
 ];
 
 const CLOSET: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
@@ -213,12 +243,18 @@ const TEMPLATES: Record<string, { room_side: string; room_equivalent: string; co
   "Basement": BASEMENT,
   "Attic": ATTIC,
   "Common Area": COMMON_AREA,
+  "Building Entrance Foyer": BUILDING_ENTRANCE_FOYER,
+  "1st Floor Hallway / Stairwell": FIRST_FLOOR_HALLWAY_STAIRWELL,
 };
 
 export function getSurfacesForRoomType(roomName: string): { room_side: string; room_equivalent: string; component: string; substrate: string }[] | null {
   const key = roomName.trim();
   if (!key) return null;
   if (TEMPLATES[key]) return TEMPLATES[key];
+  // "2nd Floor Hallway / Stairwell", "3rd Floor Hallway / Stairwell" etc. -> same surfaces as 1st
+  if (key.includes("Hallway / Stairwell")) return FIRST_FLOOR_HALLWAY_STAIRWELL;
+  // "2nd Floor Building Entrance Foyer" etc. -> same surfaces as Building Entrance Foyer
+  if (key.includes("Building Entrance Foyer")) return BUILDING_ENTRANCE_FOYER;
   // "Bedroom 1", "Bathroom 2" etc. -> look up by base type "Bedroom", "Bathroom"
   const baseType = key.replace(/\s+\d+$/, "");
   if (baseType !== key && TEMPLATES[baseType]) return TEMPLATES[baseType];

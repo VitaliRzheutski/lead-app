@@ -1,13 +1,19 @@
 import { FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { API_URL } from "../config";
 
 type Props = {
   token: string;
 };
 
+type LocationState = { buildingId?: string };
+
 export function NewInspectionPage({ token }: Props) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = (location.state ?? {}) as LocationState;
+  const preselectedBuildingId = state.buildingId ?? undefined;
+
   const [propertyAddress, setPropertyAddress] = useState("");
   const [clientName, setClientName] = useState("");
   const [inspectionDate, setInspectionDate] = useState("");
@@ -50,6 +56,7 @@ export function NewInspectionPage({ token }: Props) {
           client_name: clientName.trim(),
           inspection_date: inspectionDate,
           inspection_type: inspectionType.trim(),
+          ...(preselectedBuildingId ? { building_id: preselectedBuildingId } : {}),
         }),
       });
 
@@ -85,7 +92,7 @@ export function NewInspectionPage({ token }: Props) {
           ← Back
         </button>
         <h1 className="text-base font-semibold text-slate-50">
-          New inspection
+          {preselectedBuildingId ? "New apartment (inspection)" : "New inspection"}
         </h1>
       </header>
 

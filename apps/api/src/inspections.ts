@@ -20,6 +20,7 @@ interface InspectionRow {
   inspection_type: string;
   status: string;
   created_at: string;
+  building_id?: string | null;
 }
 
 interface RoomRow {
@@ -63,7 +64,7 @@ inspectionsRouter.get(
     }
     try {
       const result = await query<InspectionRow>(
-        `SELECT id, user_id, property_address, client_name, inspection_date, inspection_type, status, created_at
+        `SELECT id, user_id, property_address, client_name, inspection_date, inspection_type, status, created_at, building_id
          FROM inspections WHERE user_id = $1 ORDER BY created_at DESC`,
         [userId]
       );
@@ -83,7 +84,7 @@ inspectionsRouter.post(
       res.status(401).json({ error: "Unauthorized." });
       return;
     }
-    const { property_address, client_name, inspection_date, inspection_type } = req.body ?? {};
+    const { property_address, client_name, inspection_date, inspection_type, building_id } = req.body ?? {};
     if (typeof property_address !== "string" || property_address.trim() === "") {
       res.status(400).json({ error: "Property address is required." });
       return;
@@ -100,17 +101,76 @@ inspectionsRouter.post(
       res.status(400).json({ error: "Inspection date is required." });
       return;
     }
+    const bid = building_id != null && typeof building_id === "string" && building_id.trim() !== "" ? building_id.trim() : null;
     try {
       const result = await query<InspectionRow>(
-        `INSERT INTO inspections (user_id, property_address, client_name, inspection_date, inspection_type, status)
-         VALUES ($1, $2, $3, $4, $5, 'draft')
-         RETURNING id, user_id, property_address, client_name, inspection_date, inspection_type, status, created_at`,
-        [userId, property_address.trim(), client_name.trim(), inspection_date, inspection_type.trim()]
+        `INSERT INTO inspections (user_id, property_address, client_name, inspection_date, inspection_type, status, building_id)
+         VALUES ($1, $2, $3, $4, $5, 'draft', $6)
+         RETURNING id, user_id, property_address, client_name, inspection_date, inspection_type, status, created_at, building_id`,
+        [userId, property_address.trim(), client_name.trim(), inspection_date, inspection_type.trim(), bid]
       );
       res.status(201).json({ inspection: result.rows[0] });
     } catch (err) {
       if (process.env.NODE_ENV !== "production") console.error(err);
       res.status(500).json({ error: "Failed to create inspection." });
+    }
+  }
+);
+
+// POST /inspections/common-area - create common area inspection with preset rooms (Building Entrance Foyer + 1st Floor Hallway / Stairwell)
+inspectionsRouter.post(
+  "/common-area",
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized." });
+      return;
+    }
+    const { building_id } = req.body ?? {};
+    const bid = building_id != null && typeof building_id === "string" && building_id.trim() !== "" ? building_id.trim() : null;
+    if (bid !== null) {
+      const buildingCheck = await query<{ id: string }>("SELECT id FROM buildings WHERE id = $1 AND user_id = $2", [bid, userId]);
+      if (buildingCheck.rows.length === 0) {
+        res.status(400).json({ error: "Building not found." });
+        return;
+      }
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      const inspResult = await query<InspectionRow>(
+        `INSERT INTO inspections (user_id, property_address, client_name, inspection_date, inspection_type, status, building_id)
+         VALUES ($1, 'Common area', '', $2, 'Common area', 'draft', $3)
+         RETURNING id, user_id, property_address, client_name, inspection_date, inspection_type, status, created_at, building_id`,
+        [userId, today, bid]
+      );
+      const inspection = inspResult.rows[0];
+      const inspectionId = inspection.id;
+
+      const roomNames = ["Building Entrance Foyer", "1st Floor Hallway / Stairwell"] as const;
+      for (const room_name of roomNames) {
+        const roomResult = await query<RoomRow>(
+          `INSERT INTO rooms (inspection_id, name, interior_exterior, floor, room_name)
+           VALUES ($1, $2, 'interior', '1st Floor', $2)
+           RETURNING id, inspection_id, name, interior_exterior, floor, room_name`,
+          [inspectionId, room_name]
+        );
+        const room = roomResult.rows[0];
+        const templateSurfaces = getSurfacesForRoomType(room.room_name);
+        if (templateSurfaces?.length) {
+          for (const s of templateSurfaces) {
+            await query(
+              `INSERT INTO surfaces (room_id, room_side, room_code, room_equivalent, component, substrate, xrf_reading, result, notes)
+               VALUES ($1, $2, NULL, $3, $4, $5, 0, 'negative', NULL)`,
+              [room.id, s.room_side, s.room_equivalent, s.component, s.substrate]
+            );
+          }
+        }
+      }
+
+      res.status(201).json({ inspection });
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") console.error(err);
+      res.status(500).json({ error: "Failed to create common area." });
     }
   }
 );
@@ -130,7 +190,7 @@ inspectionsRouter.get(
     }
     try {
       const result = await query<InspectionRow>(
-        `SELECT id, user_id, property_address, client_name, inspection_date, inspection_type, status, created_at
+        `SELECT id, user_id, property_address, client_name, inspection_date, inspection_type, status, created_at, building_id
          FROM inspections WHERE id = $1 AND user_id = $2`,
         [inspectionId, userId]
       );
@@ -142,6 +202,51 @@ inspectionsRouter.get(
     } catch (err) {
       if (process.env.NODE_ENV !== "production") console.error(err);
       res.status(500).json({ error: "Failed to load inspection." });
+    }
+  }
+);
+
+inspectionsRouter.patch(
+  "/:id",
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized." });
+      return;
+    }
+    const inspectionId = req.params.id;
+    const { building_id } = req.body ?? {};
+    const bid = building_id === null || building_id === undefined || building_id === ""
+      ? null
+      : typeof building_id === "string" ? building_id.trim() : null;
+    if (bid !== null && bid === "") {
+      res.status(400).json({ error: "Invalid building_id." });
+      return;
+    }
+    try {
+      if (bid !== null) {
+        const buildingCheck = await query<{ id: string }>(
+          "SELECT id FROM buildings WHERE id = $1 AND user_id = $2",
+          [bid, userId]
+        );
+        if (buildingCheck.rows.length === 0) {
+          res.status(400).json({ error: "Building not found." });
+          return;
+        }
+      }
+      const result = await query<InspectionRow>(
+        `UPDATE inspections SET building_id = $1 WHERE id = $2 AND user_id = $3
+         RETURNING id, user_id, property_address, client_name, inspection_date, inspection_type, status, created_at, building_id`,
+        [bid, inspectionId, userId]
+      );
+      if (result.rows.length === 0) {
+        res.status(404).json({ error: "Inspection not found." });
+        return;
+      }
+      res.status(200).json({ inspection: result.rows[0] });
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") console.error(err);
+      res.status(500).json({ error: "Failed to update inspection." });
     }
   }
 );
