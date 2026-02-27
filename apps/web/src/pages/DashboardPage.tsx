@@ -39,6 +39,10 @@ export function DashboardPage({ token, onLogout }: Props) {
   const [isAddingBuilding, setIsAddingBuilding] = useState(false);
   const [isSubmittingBuilding, setIsSubmittingBuilding] = useState(false);
   const [addingCommonAreaBuildingId, setAddingCommonAreaBuildingId] = useState<string | null>(null);
+  const [editingBuildingId, setEditingBuildingId] = useState<string | null>(null);
+  const [editingInspectionId, setEditingInspectionId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
   async function loadBuildings() {
     setError(null);
@@ -110,6 +114,99 @@ export function DashboardPage({ token, onLogout }: Props) {
 
   function goToNewInspection(buildingId?: string) {
     navigate("/inspections/new", { state: buildingId ? { buildingId } : undefined });
+  }
+
+  async function handleDeleteInspection(inspectionId: string) {
+    if (!confirm("Remove this inspection? This cannot be undone.")) return;
+    setError(null);
+    try {
+      const response = await fetch(`${API_URL}/inspections/${inspectionId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        setError(json?.error ?? "Failed to remove inspection.");
+        return;
+      }
+      await loadBuildings();
+    } catch (_err) {
+      setError("Unable to reach the server. Please try again.");
+    }
+  }
+
+  function startEditBuilding(building: Building) {
+    setEditingBuildingId(building.id);
+    setEditName(building.name);
+    setEditingInspectionId(null);
+  }
+
+  function startEditInspection(inspection: Inspection) {
+    setEditingInspectionId(inspection.id);
+    setEditName(inspection.property_address);
+    setEditingBuildingId(null);
+  }
+
+  function cancelEdit() {
+    setEditingBuildingId(null);
+    setEditingInspectionId(null);
+    setEditName("");
+  }
+
+  async function handleSubmitEditBuilding(buildingId: string) {
+    if (!editName.trim()) return;
+    setIsSubmittingEdit(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_URL}/buildings/${buildingId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: editName.trim() }),
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        setError(json?.error ?? "Failed to update building.");
+        return;
+      }
+      setEditingBuildingId(null);
+      setEditName("");
+      await loadBuildings();
+    } catch (_err) {
+      setError("Unable to reach the server. Please try again.");
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  }
+
+  async function handleSubmitEditInspection(inspectionId: string) {
+    if (!editName.trim()) return;
+    setIsSubmittingEdit(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_URL}/inspections/${inspectionId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ property_address: editName.trim() }),
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        setError(json?.error ?? "Failed to update inspection.");
+        return;
+      }
+      setEditingInspectionId(null);
+      setEditName("");
+      await loadBuildings();
+    } catch (_err) {
+      setError("Unable to reach the server. Please try again.");
+    } finally {
+      setIsSubmittingEdit(false);
+    }
   }
 
   async function handleAddCommonArea(buildingId: string) {
@@ -230,9 +327,35 @@ export function DashboardPage({ token, onLogout }: Props) {
                 {data.buildings.map((building) => (
                   <div key={building.id} className="space-y-2">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
-                        {building.name}
-                      </h3>
+                      {editingBuildingId === building.id ? (
+                        <form
+                          onSubmit={(e) => { e.preventDefault(); handleSubmitEditBuilding(building.id); }}
+                          className="flex items-center gap-2 flex-1 min-w-0"
+                        >
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="flex-1 min-w-0 rounded border border-slate-600 bg-slate-950 px-2 py-1 text-xs text-slate-50 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                            autoFocus
+                          />
+                          <button type="submit" disabled={isSubmittingEdit || !editName.trim()} className="text-xs text-sky-400 hover:text-sky-300 disabled:opacity-50">Save</button>
+                          <button type="button" onClick={cancelEdit} className="text-xs text-slate-400 hover:text-slate-300">Cancel</button>
+                        </form>
+                      ) : (
+                        <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide flex items-center gap-1">
+                          {building.name}
+                          <button
+                            type="button"
+                            onClick={() => startEditBuilding(building)}
+                            className="p-0.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700"
+                            title="Edit building name"
+                            aria-label="Edit building name"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                          </button>
+                        </h3>
+                      )}
                       <div className="flex gap-2">
                         <button
                           type="button"
@@ -258,44 +381,84 @@ export function DashboardPage({ token, onLogout }: Props) {
                         building.inspections.map((inspection) => (
                           <li key={inspection.id}>
                             <div className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 hover:border-slate-700 transition-colors">
-                              <button
-                                type="button"
-                                onClick={() => navigate(`/inspections/${inspection.id}`)}
-                                className="w-full text-left"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-medium text-slate-50 truncate">
-                                      {inspection.property_address}
-                                    </p>
-                                    <p className="text-[11px] text-slate-400 truncate">
-                                      {inspection.client_name} •{" "}
-                                      <span className="font-mono">{inspection.inspection_date}</span>
-                                    </p>
-                                  </div>
-                                  <span
-                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium shrink-0 ${
-                                      inspection.status === "completed"
-                                        ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
-                                        : "bg-amber-500/10 text-amber-300 border border-amber-500/40"
-                                    }`}
-                                  >
-                                    {inspection.status}
-                                  </span>
-                                </div>
-                              </button>
-                              <div className="mt-2 pt-2 border-t border-slate-800/80 flex justify-end">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    navigate(`/inspections/${inspection.id}/calibration`);
-                                  }}
-                                  className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
+                              {editingInspectionId === inspection.id ? (
+                                <form
+                                  onSubmit={(e) => { e.preventDefault(); handleSubmitEditInspection(inspection.id); }}
+                                  className="space-y-2"
                                 >
-                                  Calibration test
-                                </button>
-                              </div>
+                                  <input
+                                    type="text"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    className="w-full rounded border border-slate-600 bg-slate-900 px-2 py-1 text-sm text-slate-50 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                    autoFocus
+                                  />
+                                  <div className="flex gap-1">
+                                    <button type="submit" disabled={isSubmittingEdit || !editName.trim()} className="text-xs text-sky-400 hover:text-sky-300 disabled:opacity-50">Save</button>
+                                    <button type="button" onClick={cancelEdit} className="text-xs text-slate-400 hover:text-slate-300">Cancel</button>
+                                  </div>
+                                </form>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => navigate(`/inspections/${inspection.id}`)}
+                                    className="w-full text-left"
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-medium text-slate-50 truncate">
+                                          {inspection.property_address}
+                                        </p>
+                                        <p className="text-[11px] text-slate-400 truncate">
+                                          {inspection.client_name} •{" "}
+                                          <span className="font-mono">{inspection.inspection_date}</span>
+                                        </p>
+                                      </div>
+                                      <span
+                                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium shrink-0 ${
+                                          inspection.status === "completed"
+                                            ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
+                                            : "bg-amber-500/10 text-amber-300 border border-amber-500/40"
+                                        }`}
+                                      >
+                                        {inspection.status}
+                                      </span>
+                                    </div>
+                                  </button>
+                                  <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                                    <div className="flex gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); startEditInspection(inspection); }}
+                                        className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700"
+                                        title="Edit name"
+                                        aria-label="Edit inspection name"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteInspection(inspection.id); }}
+                                        className="p-1 rounded text-slate-400 hover:text-red-400 hover:bg-slate-700"
+                                        title="Remove inspection"
+                                        aria-label="Remove inspection"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                      </button>
+                                    </div>
+                                    {inspection.inspection_type !== "Common area" && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.preventDefault(); navigate(`/inspections/${inspection.id}/calibration`); }}
+                                        className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
+                                      >
+                                        Calibration test
+                                      </button>
+                                    )}
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </li>
                         ))
@@ -313,44 +476,84 @@ export function DashboardPage({ token, onLogout }: Props) {
                       {data.unassigned.map((inspection) => (
                         <li key={inspection.id}>
                           <div className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 hover:border-slate-700 transition-colors">
-                            <button
-                              type="button"
-                              onClick={() => navigate(`/inspections/${inspection.id}`)}
-                              className="w-full text-left"
-                            >
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium text-slate-50 truncate">
-                                    {inspection.property_address}
-                                  </p>
-                                  <p className="text-[11px] text-slate-400 truncate">
-                                    {inspection.client_name} •{" "}
-                                    <span className="font-mono">{inspection.inspection_date}</span>
-                                  </p>
-                                </div>
-                                <span
-                                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                                    inspection.status === "completed"
-                                      ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
-                                      : "bg-amber-500/10 text-amber-300 border border-amber-500/40"
-                                  }`}
-                                >
-                                  {inspection.status}
-                                </span>
-                              </div>
-                            </button>
-                            <div className="mt-2 pt-2 border-t border-slate-800/80 flex justify-end">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  navigate(`/inspections/${inspection.id}/calibration`);
-                                }}
-                                className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
+                            {editingInspectionId === inspection.id ? (
+                              <form
+                                onSubmit={(e) => { e.preventDefault(); handleSubmitEditInspection(inspection.id); }}
+                                className="space-y-2"
                               >
-                                Calibration test
-                              </button>
-                            </div>
+                                <input
+                                  type="text"
+                                  value={editName}
+                                  onChange={(e) => setEditName(e.target.value)}
+                                  className="w-full rounded border border-slate-600 bg-slate-900 px-2 py-1 text-sm text-slate-50 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                                  autoFocus
+                                />
+                                <div className="flex gap-1">
+                                  <button type="submit" disabled={isSubmittingEdit || !editName.trim()} className="text-xs text-sky-400 hover:text-sky-300 disabled:opacity-50">Save</button>
+                                  <button type="button" onClick={cancelEdit} className="text-xs text-slate-400 hover:text-slate-300">Cancel</button>
+                                </div>
+                              </form>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`/inspections/${inspection.id}`)}
+                                  className="w-full text-left"
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm font-medium text-slate-50 truncate">
+                                        {inspection.property_address}
+                                      </p>
+                                      <p className="text-[11px] text-slate-400 truncate">
+                                        {inspection.client_name} •{" "}
+                                        <span className="font-mono">{inspection.inspection_date}</span>
+                                      </p>
+                                    </div>
+                                    <span
+                                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                                        inspection.status === "completed"
+                                          ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
+                                          : "bg-amber-500/10 text-amber-300 border border-amber-500/40"
+                                      }`}
+                                    >
+                                      {inspection.status}
+                                    </span>
+                                  </div>
+                                </button>
+                                <div className="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                                  <div className="flex gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); startEditInspection(inspection); }}
+                                      className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700"
+                                      title="Edit name"
+                                      aria-label="Edit inspection name"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteInspection(inspection.id); }}
+                                      className="p-1 rounded text-slate-400 hover:text-red-400 hover:bg-slate-700"
+                                      title="Remove inspection"
+                                      aria-label="Remove inspection"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                    </button>
+                                  </div>
+                                  {inspection.inspection_type !== "Common area" && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.preventDefault(); navigate(`/inspections/${inspection.id}/calibration`); }}
+                                      className="text-[11px] font-medium text-sky-400 hover:text-sky-300 touch-manipulation"
+                                    >
+                                      Calibration test
+                                    </button>
+                                  )}
+                                </div>
+                              </>
+                            )}
                           </div>
                         </li>
                       ))}

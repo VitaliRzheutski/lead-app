@@ -144,6 +144,7 @@ const BUILDING_ENTRANCE_FOYER: { room_side: string; room_equivalent: string; com
 ];
 
 const FIRST_FLOOR_HALLWAY_STAIRWELL: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  wall("Hallway Wall", 0), wall("Hallway Wall", 1), wall("Hallway Wall", 2), wall("Hallway Wall", 3),
   baseboard("Hallway Baseboard"),
   crownMolding("Crown Molding"),
   floorTile("Floor"),

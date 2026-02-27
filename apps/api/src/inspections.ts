@@ -215,16 +215,20 @@ inspectionsRouter.patch(
       return;
     }
     const inspectionId = req.params.id;
-    const { building_id } = req.body ?? {};
-    const bid = building_id === null || building_id === undefined || building_id === ""
+    const body = req.body ?? {};
+    const { building_id, property_address } = body;
+    const hasBuildingId = "building_id" in body;
+    const hasPropertyAddress = "property_address" in body;
+    const bid = !hasBuildingId ? undefined : (building_id === null || building_id === undefined || building_id === ""
       ? null
-      : typeof building_id === "string" ? building_id.trim() : null;
-    if (bid !== null && bid === "") {
+      : typeof building_id === "string" ? building_id.trim() : null);
+    if (hasBuildingId && bid !== null && bid === "") {
       res.status(400).json({ error: "Invalid building_id." });
       return;
     }
+    const propAddr = hasPropertyAddress && typeof property_address === "string" ? property_address.trim() : undefined;
     try {
-      if (bid !== null) {
+      if (bid !== undefined && bid !== null) {
         const buildingCheck = await query<{ id: string }>(
           "SELECT id FROM buildings WHERE id = $1 AND user_id = $2",
           [bid, userId]
@@ -234,10 +238,30 @@ inspectionsRouter.patch(
           return;
         }
       }
+      if (propAddr !== undefined && propAddr === "") {
+        res.status(400).json({ error: "Property address cannot be empty." });
+        return;
+      }
+      const updates: string[] = [];
+      const values: unknown[] = [];
+      let idx = 1;
+      if (hasBuildingId) {
+        updates.push(`building_id = $${idx++}`);
+        values.push(bid);
+      }
+      if (hasPropertyAddress && propAddr !== undefined) {
+        updates.push(`property_address = $${idx++}`);
+        values.push(propAddr);
+      }
+      if (updates.length === 0) {
+        res.status(400).json({ error: "No fields to update." });
+        return;
+      }
+      values.push(inspectionId, userId);
       const result = await query<InspectionRow>(
-        `UPDATE inspections SET building_id = $1 WHERE id = $2 AND user_id = $3
+        `UPDATE inspections SET ${updates.join(", ")} WHERE id = $${idx++} AND user_id = $${idx}
          RETURNING id, user_id, property_address, client_name, inspection_date, inspection_type, status, created_at, building_id`,
-        [bid, inspectionId, userId]
+        values
       );
       if (result.rows.length === 0) {
         res.status(404).json({ error: "Inspection not found." });
@@ -247,6 +271,50 @@ inspectionsRouter.patch(
     } catch (err) {
       if (process.env.NODE_ENV !== "production") console.error(err);
       res.status(500).json({ error: "Failed to update inspection." });
+    }
+  }
+);
+
+inspectionsRouter.delete(
+  "/:id",
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized." });
+      return;
+    }
+    const inspectionId = req.params.id;
+    try {
+      const check = await query<{ id: string }>(
+        "SELECT id FROM inspections WHERE id = $1 AND user_id = $2",
+        [inspectionId, userId]
+      );
+      if (check.rows.length === 0) {
+        res.status(404).json({ error: "Inspection not found." });
+        return;
+      }
+      const roomsResult = await query<{ id: string }>(
+        "SELECT id FROM rooms WHERE inspection_id = $1",
+        [inspectionId]
+      );
+      const roomIds = roomsResult.rows.map((r) => r.id);
+      if (roomIds.length > 0) {
+        const surfacesResult = await query<{ id: string }>(
+          "SELECT id FROM surfaces WHERE room_id = ANY($1)",
+          [roomIds]
+        );
+        const surfaceIds = surfacesResult.rows.map((s) => s.id);
+        if (surfaceIds.length > 0) {
+          await query("DELETE FROM photos WHERE surface_id = ANY($1)", [surfaceIds]);
+        }
+        await query("DELETE FROM surfaces WHERE room_id = ANY($1)", [roomIds]);
+        await query("DELETE FROM rooms WHERE inspection_id = $1", [inspectionId]);
+      }
+      await query("DELETE FROM inspections WHERE id = $1 AND user_id = $2", [inspectionId, userId]);
+      res.status(200).json({ deleted: true });
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") console.error(err);
+      res.status(500).json({ error: "Failed to delete inspection." });
     }
   }
 );
