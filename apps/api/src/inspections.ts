@@ -632,6 +632,10 @@ inspectionsRouter.post(
       const timestamp = Date.now();
       const objectKey = `inspections/${inspectionId}/reports/${timestamp}_report.pdf`;
       storeReportPdf(objectKey, pdfBytes);
+      await query(
+        "INSERT INTO report_generations (inspection_id, user_id) VALUES ($1, $2)",
+        [inspectionId, userId]
+      );
       const downloadUrl = `${baseUrl}/inspections/${inspectionId}/reports/${timestamp}/download`;
       res.status(201).json({
         reportId: String(timestamp),

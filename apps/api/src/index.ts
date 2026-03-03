@@ -5,6 +5,7 @@ import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { authRouter } from "./auth";
 import { buildingsRouter } from "./buildings";
+import { dashboardRouter } from "./dashboard";
 import { inspectionsRouter } from "./inspections";
 import { roomsRouter } from "./rooms";
 import { surfacesRouter } from "./surfaces";
@@ -52,6 +53,7 @@ app.get("/health", (_req: Request, res: Response) => {
 
 app.use("/auth", authRouter);
 app.use("/buildings", buildingsRouter);
+app.use("/dashboard", dashboardRouter);
 app.use("/inspections", inspectionsRouter);
 app.use("/rooms", roomsRouter);
 app.use("/surfaces", surfacesRouter);
