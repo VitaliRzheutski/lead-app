@@ -2,6 +2,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CalibrationSection } from "../components/CalibrationSection";
 import { API_URL } from "../config";
+import { formatDate } from "../utils/date";
 
 type Props = {
   token: string;
@@ -449,8 +450,8 @@ export function InspectionDetailPage({ token }: Props) {
                 </p>
                 <p className="text-slate-300">
                   Date:{" "}
-                  <span className="font-mono text-xs">
-                    {inspection.inspection_date}
+                  <span className="text-xs">
+                    {formatDate(inspection.inspection_date)}
                   </span>
                 </p>
                 <p className="text-slate-300">
@@ -461,8 +462,8 @@ export function InspectionDetailPage({ token }: Props) {
                 </p>
                 <p className="text-xs text-slate-500">
                   Created at:{" "}
-                  <span className="font-mono">
-                    {new Date(inspection.created_at).toLocaleString()}
+                  <span>
+                    {formatDate(inspection.created_at)}
                   </span>
                 </p>
 

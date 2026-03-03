@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { clearToken } from "../auth";
 import { API_URL } from "../config";
+import { formatDate } from "../utils/date";
 
 type Props = {
   token: string;
@@ -359,7 +360,7 @@ export function DashboardPage({ token, onLogout }: Props) {
 
                 <div className="text-xs text-slate-400 border-t border-slate-800 pt-3">
                   Calibration: {stats.calibrationLastDate
-                    ? `Last ${stats.calibrationLastDate}`
+                    ? `Last ${formatDate(stats.calibrationLastDate)}`
                     : "No calibration recorded"}
                   {" · "}
                   {stats.inspectionsWithCalibration}/{stats.inspectionsTotal} inspections have calibration
@@ -377,7 +378,7 @@ export function DashboardPage({ token, onLogout }: Props) {
                             className="w-full text-left text-xs text-sky-400 hover:text-sky-300 truncate block py-0.5"
                           >
                             {inv.property_address}
-                            <span className="text-slate-500 font-mono ml-1">{inv.inspection_date}</span>
+                            <span className="text-slate-500 ml-1">{formatDate(inv.inspection_date)}</span>
                           </button>
                         </li>
                       ))}
@@ -536,7 +537,7 @@ export function DashboardPage({ token, onLogout }: Props) {
                                         </p>
                                         <p className="text-[11px] text-slate-400 truncate">
                                           {inspection.client_name} •{" "}
-                                          <span className="font-mono">{inspection.inspection_date}</span>
+                                          <span>{formatDate(inspection.inspection_date)}</span>
                                         </p>
                                       </div>
                                       <span
@@ -631,7 +632,7 @@ export function DashboardPage({ token, onLogout }: Props) {
                                       </p>
                                       <p className="text-[11px] text-slate-400 truncate">
                                         {inspection.client_name} •{" "}
-                                        <span className="font-mono">{inspection.inspection_date}</span>
+                                        <span>{formatDate(inspection.inspection_date)}</span>
                                       </p>
                                     </div>
                                     <span

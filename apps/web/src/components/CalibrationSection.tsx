@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { API_URL } from "../config";
+import { formatDate } from "../utils/date";
 
 type Calibration = {
   id: string;
@@ -204,21 +205,7 @@ export function CalibrationSection({
             100
         ) / 100
       : null;
-  const dateTitle = (() => {
-    const raw = calibration?.calibration_date;
-    if (!raw) return "";
-    const dateStr =
-      typeof raw === "string" && (raw.endsWith("Z") || raw.includes("+") || raw.includes("T"))
-        ? raw
-        : `${raw}`.trim() + "Z";
-    const d = new Date(dateStr);
-    if (Number.isNaN(d.getTime())) return "";
-    return d.toLocaleDateString("en-US", {
-      month: "numeric",
-      day: "numeric",
-      year: "2-digit",
-    });
-  })();
+  const dateTitle = formatDate(calibration?.calibration_date);
 
   function CollapseHeader({
     title,
