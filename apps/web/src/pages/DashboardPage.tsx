@@ -30,10 +30,26 @@ type BuildingsResponse = {
   unassigned: Inspection[];
 };
 
+type DashboardStats = {
+  inspectionsTotal: number;
+  inspectionsThisMonth: number;
+  buildingsTotal: number;
+  surfacesTotal: number;
+  surfacesPositive: number;
+  surfacesNegative: number;
+  positivePercent: number;
+  calibrationLastDate: string | null;
+  inspectionsWithCalibration: number;
+  reportsGenerated: number;
+  recentInspections: { id: string; property_address: string; inspection_date: string }[];
+};
+
 export function DashboardPage({ token, onLogout }: Props) {
   const navigate = useNavigate();
   const [data, setData] = useState<BuildingsResponse | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newBuildingName, setNewBuildingName] = useState("");
   const [isAddingBuilding, setIsAddingBuilding] = useState(false);
@@ -66,11 +82,29 @@ export function DashboardPage({ token, onLogout }: Props) {
     }
   }
 
+  async function loadStats() {
+    try {
+      const response = await fetch(`${API_URL}/dashboard/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await response.json();
+      if (response.ok) setStats(json);
+    } catch (_err) {
+      setStats(null);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
+    setIsLoadingStats(true);
     loadBuildings().then(() => {
       if (!cancelled) setIsLoading(false);
+    });
+    loadStats().then(() => {
+      if (!cancelled) setIsLoadingStats(false);
     });
     return () => {
       cancelled = true;
@@ -99,6 +133,7 @@ export function DashboardPage({ token, onLogout }: Props) {
       setNewBuildingName("");
       setIsAddingBuilding(false);
       await loadBuildings();
+      await loadStats();
     } catch (_err) {
       setError("Unable to reach the server. Please try again.");
     } finally {
@@ -130,6 +165,7 @@ export function DashboardPage({ token, onLogout }: Props) {
         return;
       }
       await loadBuildings();
+      await loadStats();
     } catch (_err) {
       setError("Unable to reach the server. Please try again.");
     }
@@ -174,6 +210,7 @@ export function DashboardPage({ token, onLogout }: Props) {
       setEditingBuildingId(null);
       setEditName("");
       await loadBuildings();
+      await loadStats();
     } catch (_err) {
       setError("Unable to reach the server. Please try again.");
     } finally {
@@ -202,6 +239,7 @@ export function DashboardPage({ token, onLogout }: Props) {
       setEditingInspectionId(null);
       setEditName("");
       await loadBuildings();
+      await loadStats();
     } catch (_err) {
       setError("Unable to reach the server. Please try again.");
     } finally {
@@ -229,6 +267,7 @@ export function DashboardPage({ token, onLogout }: Props) {
       const id = json?.inspection?.id;
       if (id) navigate(`/inspections/${id}`);
       await loadBuildings();
+      await loadStats();
     } catch (_err) {
       setError("Unable to reach the server. Please try again.");
     } finally {
@@ -268,6 +307,91 @@ export function DashboardPage({ token, onLogout }: Props) {
             >
               + Add building
             </button>
+          </div>
+
+          {/* Dashboard overview — always show; loading or data */}
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 space-y-4">
+            <h2 className="text-sm font-semibold text-slate-100">Dashboard</h2>
+
+            {isLoadingStats && !stats && (
+              <div className="space-y-4 animate-pulse">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="rounded-xl bg-slate-800/50 h-16" />
+                  ))}
+                </div>
+                <div className="rounded-xl bg-slate-800/50 h-14" />
+                <div className="rounded bg-slate-800/50 h-5 w-3/4" />
+                <div className="rounded bg-slate-800/50 h-20" />
+              </div>
+            )}
+
+            {!isLoadingStats && stats && (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2.5">
+                    <p className="text-[11px] text-slate-400 uppercase tracking-wide">Inspections this month</p>
+                    <p className="text-lg font-semibold text-slate-50">{stats.inspectionsThisMonth}</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2.5">
+                    <p className="text-[11px] text-slate-400 uppercase tracking-wide">Total buildings</p>
+                    <p className="text-lg font-semibold text-slate-50">{stats.buildingsTotal}</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2.5">
+                    <p className="text-[11px] text-slate-400 uppercase tracking-wide">Total inspections</p>
+                    <p className="text-lg font-semibold text-slate-50">{stats.inspectionsTotal}</p>
+                  </div>
+                  <div className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-2.5">
+                    <p className="text-[11px] text-slate-400 uppercase tracking-wide">Reports generated</p>
+                    <p className="text-lg font-semibold text-slate-50">{stats.reportsGenerated}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-3">
+                  <p className="text-xs font-semibold text-slate-300 mb-2">Surfaces tested (total)</p>
+                  <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                    <span className="text-slate-50 font-medium">{stats.surfacesTotal} tested</span>
+                    <span className="text-red-400">{stats.surfacesPositive} positive</span>
+                    <span className="text-emerald-400">{stats.surfacesNegative} negative</span>
+                    <span className="text-slate-400">{stats.positivePercent}% positive</span>
+                  </div>
+                </div>
+
+                <div className="text-xs text-slate-400 border-t border-slate-800 pt-3">
+                  Calibration: {stats.calibrationLastDate
+                    ? `Last ${stats.calibrationLastDate}`
+                    : "No calibration recorded"}
+                  {" · "}
+                  {stats.inspectionsWithCalibration}/{stats.inspectionsTotal} inspections have calibration
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-slate-300 mb-2">Recent inspections</p>
+                  {stats.recentInspections.length > 0 ? (
+                    <ul className="space-y-1">
+                      {stats.recentInspections.slice(0, 5).map((inv) => (
+                        <li key={inv.id}>
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/inspections/${inv.id}`)}
+                            className="w-full text-left text-xs text-sky-400 hover:text-sky-300 truncate block py-0.5"
+                          >
+                            {inv.property_address}
+                            <span className="text-slate-500 font-mono ml-1">{inv.inspection_date}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-slate-500">No recent inspections</p>
+                  )}
+                </div>
+              </>
+            )}
+
+            {!isLoadingStats && !stats && (
+              <p className="text-xs text-slate-400">Could not load dashboard stats.</p>
+            )}
           </div>
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 space-y-3">
