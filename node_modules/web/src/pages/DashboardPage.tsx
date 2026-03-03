@@ -293,23 +293,6 @@ export function DashboardPage({ token, onLogout }: Props) {
 
       <section className="flex-1 px-4 py-6 flex justify-center">
         <div className="w-full max-w-lg space-y-4">
-          <div className="flex items-center justify-end gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => goToNewInspection()}
-              className="inline-flex items-center rounded-lg bg-sky-500 px-3 py-2 text-xs font-medium text-slate-950 hover:bg-sky-400 transition-colors"
-            >
-              + New inspection
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsAddingBuilding(true)}
-              className="inline-flex items-center rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-slate-700 transition-colors"
-            >
-              + Add building
-            </button>
-          </div>
-
           {/* Dashboard overview — always show; loading or data */}
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 space-y-4">
             <h2 className="text-sm font-semibold text-slate-100">Dashboard</h2>
@@ -393,6 +376,23 @@ export function DashboardPage({ token, onLogout }: Props) {
             {!isLoadingStats && !stats && (
               <p className="text-xs text-slate-400">Could not load dashboard stats.</p>
             )}
+          </div>
+
+          <div className="flex items-center justify-end gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => goToNewInspection()}
+              className="inline-flex items-center rounded-lg bg-sky-500 px-3 py-2 text-xs font-medium text-slate-950 hover:bg-sky-400 transition-colors"
+            >
+              + New inspection
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAddingBuilding(true)}
+              className="inline-flex items-center rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-slate-700 transition-colors"
+            >
+              + Add building
+            </button>
           </div>
 
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 space-y-3">
