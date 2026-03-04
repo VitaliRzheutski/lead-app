@@ -153,3 +153,4 @@ VITE_API_URL=https://lead-app-api.onrender.com
 | 502 / API not responding | Check API logs; verify `DATABASE_URL` and migrations |
 | Build fails | Check Root Directory is `apps/api` or `apps/web` |
 | Login/Register fails | Verify `JWT_SECRET` is set and `VITE_API_URL` points to API |
+| **500 on Generate Report** | Puppeteer needs Chromium. The API uses `puppeteer.config.cjs` and a postinstall to install Chrome. Redeploy; if it still fails, check API logs for "Could not find Chrome" and consider upgrading to a paid Render plan for more memory. |
