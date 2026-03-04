@@ -41,6 +41,7 @@ const ROOM_TYPE_OPTIONS = [
   "Living Room",
   "Dining Room",
   "Foyer",
+  "Foyer / Front Door",
   "Entrance Hallway",
   "Hallway",
   "Closet",

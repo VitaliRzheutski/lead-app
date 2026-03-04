@@ -113,6 +113,15 @@ const FOYER: { room_side: string; room_equivalent: string; component: string; su
   ceiling("Ceiling"), floor("Floor"), baseboard("Baseboard"), radiator("Radiator"),
 ];
 
+function frontDoor(equivalent: string): { room_side: string; room_equivalent: string; component: string; substrate: string } {
+  return { room_side: "A (front)", room_equivalent: equivalent, component: "Door", substrate: "Wood" };
+}
+
+// Foyer / Front Door: only the 3 front door surfaces (Casing, Jamb, Panel)
+const FOYER_FRONT_DOOR: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
+  frontDoor("Front Door Casing"), frontDoor("Front Door Jamb"), frontDoor("Front Door Panel"),
+];
+
 const ENTRANCE_HALLWAY: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [
   wall("Entrance Hallway Wall", 0), wall("Entrance Hallway Wall", 1), wall("Entrance Hallway Wall", 2), wall("Entrance Hallway Wall", 3),
   door("Door Panel"), door("Door Jamb"), door("Door Casing"),
@@ -228,7 +237,7 @@ const TEMPLATES: Record<string, { room_side: string; room_equivalent: string; co
   "Kitchen": KITCHEN,
   "Living Room": LIVING_ROOM,
   "Dining Room": DINING_ROOM,
-  "Foyer / Front Door": FOYER,
+  "Foyer / Front Door": FOYER_FRONT_DOOR,
   "Foyer": FOYER,
   "Entrance Hallway": ENTRANCE_HALLWAY,
   "Hallway": HALLWAY,
