@@ -206,6 +206,64 @@ inspectionsRouter.get(
   }
 );
 
+function escapeCsvValue(val: string | number | null | undefined): string {
+  const s = String(val ?? "");
+  if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r")) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+inspectionsRouter.get(
+  "/:id/export-csv",
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized." });
+      return;
+    }
+    const inspectionId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    if (!inspectionId || typeof inspectionId !== "string") {
+      res.status(400).json({ error: "Inspection id is required." });
+      return;
+    }
+    try {
+      const data = await loadReportData(inspectionId, userId);
+      if (!data.inspection) {
+        res.status(404).json({ error: "Inspection not found." });
+        return;
+      }
+      const headers = ["Room", "Int/Ext", "Floor", "Room Side", "Room Code", "Room Equivalent", "Component", "Substrate", "XRF Reading", "Result", "Notes"];
+      const lines = [headers.map(escapeCsvValue).join(",")];
+      for (const s of data.surfaces) {
+        lines.push([
+          s.room_name,
+          s.interior_exterior,
+          s.floor,
+          s.room_side,
+          s.room_code,
+          s.room_equivalent,
+          s.component,
+          s.substrate,
+          s.xrf_reading ?? "",
+          s.result ?? "",
+          s.notes ?? "",
+        ].map(escapeCsvValue).join(","));
+      }
+      const csv = lines.join("\r\n");
+      const safeName = (data.inspection.property_address || "inspection")
+        .replace(/[^\w\s-]/g, "")
+        .slice(0, 50);
+      res.setHeader("Content-Disposition", `attachment; filename="${safeName}.csv"`);
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.send(csv);
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") console.error(err);
+      res.status(500).json({ error: "Failed to export CSV." });
+    }
+  }
+);
+
 inspectionsRouter.patch(
   "/:id",
   async (req: AuthenticatedRequest, res: Response): Promise<void> => {

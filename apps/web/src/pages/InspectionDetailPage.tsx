@@ -86,6 +86,7 @@ export function InspectionDetailPage({ token }: Props) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [hasCalibration, setHasCalibration] = useState(false);
 
   useEffect(() => {
@@ -291,6 +292,36 @@ export function InspectionDetailPage({ token }: Props) {
     }
   }
 
+  async function handleExportCsv() {
+    if (!id) return;
+    setIsExportingCsv(true);
+    setReportError(null);
+    try {
+      const response = await fetch(`${API_URL}/inspections/${id}/export-csv`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setReportError(data?.error ?? "Failed to export CSV.");
+        return;
+      }
+      const blob = await response.blob();
+      const cd = response.headers.get("Content-Disposition");
+      const match = cd?.match(/filename="?([^";\n]+)"?/);
+      const filename = match?.[1] ?? `inspection-${id}.csv`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (_err) {
+      setReportError("Unable to export. Please try again.");
+    } finally {
+      setIsExportingCsv(false);
+    }
+  }
+
   function getNextRoomName(type: string, existingRooms: Room[]): string {
     if (type === "Other") return customRoomName.trim();
     const sameType = existingRooms.filter(
@@ -491,6 +522,14 @@ export function InspectionDetailPage({ token }: Props) {
                       </button>
                       <button
                         type="button"
+                        onClick={handleExportCsv}
+                        disabled={isExportingCsv}
+                        className="inline-flex items-center rounded-lg border border-slate-600 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {isExportingCsv ? "Exporting..." : "Export CSV"}
+                      </button>
+                      <button
+                        type="button"
                         onClick={handleGenerateReport}
                         disabled={isGenerating}
                         className="inline-flex items-center rounded-lg border border-slate-600 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
@@ -500,14 +539,24 @@ export function InspectionDetailPage({ token }: Props) {
                     </div>
                   )}
                   {!isLoadingReport && !latestReport && (
-                    <button
-                      type="button"
-                      onClick={handleGenerateReport}
-                      disabled={isGenerating}
-                      className="inline-flex items-center rounded-lg bg-sky-500 px-2.5 py-1.5 text-xs font-medium text-slate-950 hover:bg-sky-400 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isGenerating ? "Generating..." : "Generate Report"}
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={handleGenerateReport}
+                        disabled={isGenerating}
+                        className="inline-flex items-center rounded-lg bg-sky-500 px-2.5 py-1.5 text-xs font-medium text-slate-950 hover:bg-sky-400 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {isGenerating ? "Generating..." : "Generate Report"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleExportCsv}
+                        disabled={isExportingCsv}
+                        className="inline-flex items-center rounded-lg border border-slate-600 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {isExportingCsv ? "Exporting..." : "Export CSV"}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
