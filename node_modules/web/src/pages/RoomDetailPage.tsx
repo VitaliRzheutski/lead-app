@@ -32,18 +32,22 @@ const COMPONENT_OPTIONS = ["Wall", "Door", "Floor", "Baseboard", "Window", "Clos
 
 const ROOM_SIDE_EDIT_OPTIONS = ["A (back)", "B (left)", "C (Front)", "D (Right)", "N/A"];
 
+type EditPhoto = { id: string; file_url: string };
+
 type SurfaceCardProps = {
   surface: Surface;
   apiBase: string;
   isEditing: boolean;
   isUpdating: boolean;
   isUploading: boolean;
+  editPhotos: EditPhoto[];
   substrateOptions: string[];
   onEdit: () => void;
   onCancel: () => void;
   onSave: (id: string, p: { xrf_reading?: number; result?: string; substrate?: string; notes?: string; room_side?: string; component?: string }) => void;
   onTakePhoto: (id: string) => void;
   onAddPhoto: (id: string) => void;
+  onDeletePhoto: (surfaceId: string, photoId: string, fileUrl: string) => void;
 };
 
 function SurfaceCard({
@@ -52,12 +56,14 @@ function SurfaceCard({
   isEditing,
   isUpdating,
   isUploading,
+  editPhotos,
   substrateOptions,
   onEdit,
   onCancel,
   onSave,
   onTakePhoto,
   onAddPhoto,
+  onDeletePhoto,
 }: SurfaceCardProps) {
   const [editXrf, setEditXrf] = useState(String(surface.xrf_reading));
   const [editResult, setEditResult] = useState(surface.result);
@@ -191,6 +197,30 @@ function SurfaceCard({
               placeholder="Optional"
             />
           </div>
+          {editPhotos.length > 0 && (
+            <div className="col-span-2">
+              <label className="block text-[11px] font-medium text-slate-400 mb-1">Photos</label>
+              <div className="flex flex-wrap gap-2">
+                {editPhotos.map((photo) => (
+                  <div key={photo.id} className="relative group">
+                    <img
+                      src={apiBase + photo.file_url}
+                      alt=""
+                      className="h-14 w-14 object-cover rounded border border-slate-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onDeletePhoto(surface.id, photo.id, photo.file_url)}
+                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow hover:bg-red-400 text-xs leading-none"
+                      aria-label="Remove photo"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="flex gap-2 mt-2">
           <button
@@ -334,6 +364,7 @@ export function RoomDetailPage({ token }: Props) {
   const [uploadingSurfaceId, setUploadingSurfaceId] = useState<string | null>(null);
   const [surfaceIdForPhoto, setSurfaceIdForPhoto] = useState<string | null>(null);
   const [editingSurfaceId, setEditingSurfaceId] = useState<string | null>(null);
+  const [editingSurfacePhotos, setEditingSurfacePhotos] = useState<EditPhoto[]>([]);
   const [updatingSurfaceId, setUpdatingSurfaceId] = useState<string | null>(null);
   const addPhotoInputRef = useRef<HTMLInputElement>(null);
   const takePhotoInputRef = useRef<HTMLInputElement>(null);
@@ -409,6 +440,28 @@ export function RoomDetailPage({ token }: Props) {
     return () => { cancelled = true; };
   }, [roomId, token]);
 
+  useEffect(() => {
+    if (!editingSurfaceId || !token) {
+      setEditingSurfacePhotos([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(
+          `${API_URL}/surfaces/${editingSurfaceId}/photos`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await response.json();
+        if (!response.ok || cancelled) return;
+        setEditingSurfacePhotos(data.photos ?? []);
+      } catch {
+        if (!cancelled) setEditingSurfacePhotos([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editingSurfaceId, token]);
+
   function handleAddPhotoClick(surfaceId: string) {
     setSurfaceIdForPhoto(surfaceId);
     addPhotoInputRef.current?.click();
@@ -454,10 +507,48 @@ export function RoomDetailPage({ token }: Props) {
             : s
         )
       );
+      if (surfaceId === editingSurfaceId) {
+        const listRes = await fetch(`${API_URL}/surfaces/${surfaceId}/photos`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const listData = await listRes.json();
+        if (listRes.ok && Array.isArray(listData.photos)) setEditingSurfacePhotos(listData.photos);
+      }
     } catch (_err) {
       setFormError("Unable to reach the server.");
     } finally {
       setUploadingSurfaceId(null);
+    }
+  }
+
+  async function handleDeletePhoto(surfaceId: string, photoId: string, fileUrl: string) {
+    setFormError(null);
+    try {
+      const response = await fetch(
+        `${API_URL}/surfaces/${surfaceId}/photos/${photoId}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        setFormError(data?.error ?? "Failed to delete photo.");
+        return;
+      }
+      const remaining = editingSurfacePhotos.filter((p) => p.id !== photoId);
+      setEditingSurfacePhotos(remaining);
+      const newFirstUrl = remaining[0]?.file_url ?? null;
+      setSurfaces((prev) =>
+        prev.map((s) =>
+          s.id === surfaceId
+            ? {
+                ...s,
+                photo_count: Math.max(0, (s.photo_count ?? 0) - 1),
+                first_photo_url: s.first_photo_url === fileUrl ? newFirstUrl : s.first_photo_url,
+              }
+            : s
+        )
+      );
+    } catch (_err) {
+      setFormError("Unable to reach the server.");
     }
   }
 
@@ -818,12 +909,14 @@ export function RoomDetailPage({ token }: Props) {
                       isEditing={editingSurfaceId === s.id}
                       isUpdating={updatingSurfaceId === s.id}
                       isUploading={uploadingSurfaceId === s.id}
+                      editPhotos={editingSurfaceId === s.id ? editingSurfacePhotos : []}
                       substrateOptions={substrateOptions}
                       onEdit={() => setEditingSurfaceId(s.id)}
                       onCancel={() => setEditingSurfaceId(null)}
                       onSave={handleSurfaceUpdate}
                       onTakePhoto={handleTakePhotoClick}
                       onAddPhoto={handleAddPhotoClick}
+                      onDeletePhoto={handleDeletePhoto}
                     />
                   ))}
                 </div>

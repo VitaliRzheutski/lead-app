@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs";
 import crypto from "crypto";
 import { Router, Response } from "express";
 import multer from "multer";
@@ -118,6 +119,120 @@ surfacesRouter.post(
       }
 
       res.status(500).json({ error: "Failed to save photo." });
+    }
+  }
+);
+
+// GET /surfaces/:surfaceId/photos - list photos for a surface the user owns
+surfacesRouter.get(
+  "/:surfaceId/photos",
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized." });
+      return;
+    }
+
+    const surfaceId = req.params.surfaceId;
+
+    if (!surfaceId) {
+      res.status(400).json({ error: "Surface id is required." });
+      return;
+    }
+
+    try {
+      const surface = await query<{ id: string }>(
+        `SELECT id FROM surfaces
+         WHERE id = $1
+           AND room_id IN (
+             SELECT id FROM rooms
+             WHERE inspection_id IN (
+               SELECT id FROM inspections WHERE user_id = $2
+             )
+           )`,
+        [surfaceId, userId]
+      );
+
+      if (surface.rows.length === 0) {
+        res.status(404).json({ error: "Surface not found." });
+        return;
+      }
+
+      const photos = await query<{ id: string; file_url: string }>(
+        `SELECT id, file_url FROM photos WHERE surface_id = $1 ORDER BY created_at ASC`,
+        [surfaceId]
+      );
+
+      res.status(200).json({ photos: photos.rows });
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.error(err);
+      }
+
+      res.status(500).json({ error: "Failed to load photos." });
+    }
+  }
+);
+
+// DELETE /surfaces/:surfaceId/photos/:photoId - delete one photo
+surfacesRouter.delete(
+  "/:surfaceId/photos/:photoId",
+  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized." });
+      return;
+    }
+
+    const surfaceId = req.params.surfaceId;
+    const photoId = req.params.photoId;
+
+    if (!surfaceId || !photoId) {
+      res.status(400).json({ error: "Surface id and photo id are required." });
+      return;
+    }
+
+    try {
+      const photo = await query<PhotoRow>(
+        `SELECT p.id, p.surface_id, p.file_url
+         FROM photos p
+         JOIN surfaces s ON s.id = p.surface_id
+         JOIN rooms r ON r.id = s.room_id
+         JOIN inspections i ON i.id = r.inspection_id
+         WHERE p.id = $1 AND p.surface_id = $2 AND i.user_id = $3`,
+        [photoId, surfaceId, userId]
+      );
+
+      if (photo.rows.length === 0) {
+        res.status(404).json({ error: "Photo not found." });
+        return;
+      }
+
+      await query(
+        `DELETE FROM photos WHERE id = $1 AND surface_id = $2`,
+        [photoId, surfaceId]
+      );
+
+      const filePath = path.join(process.cwd(), photo.rows[0].file_url.replace(/^\//, ""));
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch {
+          // ignore if file already missing
+        }
+      }
+
+      res.status(200).json({ deleted: true });
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        // eslint-disable-next-line no-console
+        console.error(err);
+      }
+
+      res.status(500).json({ error: "Failed to delete photo." });
     }
   }
 );
