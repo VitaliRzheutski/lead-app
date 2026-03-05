@@ -53,7 +53,23 @@ interface PhotoReportRow {
 }
 
 const REPORTS_BASE = path.join(process.cwd(), "reports");
+const UPLOADS_BASE = path.join(process.cwd(), "uploads");
 const ROWS_PER_CAL_BLOCK = 6;
+
+/** If file_url is a local path (/uploads/...), try to read and return a data URL; else return null. */
+function photoToDataUrl(file_url: string): string | null {
+  if (file_url.startsWith("http")) return null;
+  const relative = file_url.startsWith("/") ? file_url.slice(1) : file_url;
+  const localPath = path.join(process.cwd(), relative);
+  try {
+    const buf = fs.readFileSync(localPath);
+    const ext = path.extname(localPath).toLowerCase();
+    const mime = ext === ".png" ? "image/png" : ext === ".gif" ? "image/gif" : "image/jpeg";
+    return `data:${mime};base64,${buf.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
 
 function escapeHtml(s: unknown): string {
   const str = s == null ? "" : String(s);
@@ -381,7 +397,8 @@ function renderPhotosSection(photos: PhotoReportRow[], baseUrl: string): string 
   const PHOTOS_PER_PAGE = 3;
 
   const photoBlocks = photos.map((p) => {
-    const imgSrc = p.file_url.startsWith("http") ? p.file_url : `${baseUrl.replace(/\/$/, "")}${p.file_url.startsWith("/") ? "" : "/"}${p.file_url}`;
+    const dataUrl = photoToDataUrl(p.file_url);
+    const imgSrc = dataUrl ?? (p.file_url.startsWith("http") ? p.file_url : `${baseUrl.replace(/\/$/, "")}${p.file_url.startsWith("/") ? "" : "/"}${p.file_url}`);
     const lines: string[] = [
       `Room: ${escapeHtml(p.room_name)}`,
       `Interior / Exterior: ${escapeHtml(p.interior_exterior)}`,
