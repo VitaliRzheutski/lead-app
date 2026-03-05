@@ -63,6 +63,7 @@ Deploy the Lead app (API + Web) on Render's free tier.
 | `JWT_SECRET` | *(generate a long random string, e.g. `openssl rand -hex 32`)* |
 | `FRONTEND_URL` | `https://your-web-service.onrender.com` *(update after Part 3)* |
 | `API_BASE_URL` | `https://lead-app-api.onrender.com` *(your API URL)* |
+| `PUPPETEER_CACHE_DIR` | `./.cache/puppeteer` *(so Puppeteer finds Chromium; path is relative to service root `apps/api`)* |
 
 5. **Supabase** (if using):
    - `SUPABASE_URL`
@@ -107,7 +108,16 @@ Deploy the Lead app (API + Web) on Render's free tier.
 
 ---
 
-## Part 5: Run Migrations (First Time)
+## Part 5: Report (PDF) generation on Render
+
+Puppeteer needs Chromium in a path Render can see. The API uses `puppeteer.config.cjs` so the cache is inside the service (`apps/api/.cache/puppeteer`). The postinstall script installs Chrome during build.
+
+- **If "Generate Report" still returns 500:** In the API service on Render go to **Environment** and add `PUPPETEER_CACHE_DIR` = `./.cache/puppeteer`. Then use **Manual Deploy** → **Clear build cache and deploy** so the next build runs a fresh `npm install` and downloads Chromium into that directory.
+- Free tier has 512MB RAM; very large reports can hit memory limits.
+
+---
+
+## Part 6: Run Migrations (First Time)
 
 Migrations run automatically via `npm run migrate:prod` in the Start Command. If you need to run them manually:
 
@@ -126,6 +136,7 @@ DATABASE_URL=<from Render PostgreSQL>
 JWT_SECRET=<random secure string>
 FRONTEND_URL=https://lead-app-web.onrender.com
 API_BASE_URL=https://lead-app-api.onrender.com
+PUPPETEER_CACHE_DIR=./.cache/puppeteer
 ```
 
 ### Web (Static Site)
