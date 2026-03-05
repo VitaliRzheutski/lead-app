@@ -1,11 +1,10 @@
 /**
- * Puppeteer cache: use project directory so Chromium is found on Render.
- * Render does not persist $HOME/.cache; this path is inside the service and survives build.
- * @see https://community.render.com/t/puppeteer-fails-to-find-chromium-on-render/9920
+ * Puppeteer cache: on Render only, use project directory (Render has no $HOME/.cache).
+ * Locally, leave cacheDirectory unset so Puppeteer uses the default and finds Chromium.
  */
 const { join } = require("path");
 
 /** @type {import("puppeteer").Configuration} */
 module.exports = {
-  cacheDirectory: join(__dirname, ".cache", "puppeteer"),
+  ...(process.env.RENDER && { cacheDirectory: join(__dirname, ".cache", "puppeteer") }),
 };
