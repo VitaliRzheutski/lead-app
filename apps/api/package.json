@@ -12,8 +12,10 @@
     "migrate:prod": "node dist/migrate.js"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^143.0.4",
     "bcrypt": "^6.0.0",
     "cors": "*",
+    "puppeteer-core": "^24.38.0",
     "dotenv": "*",
     "express": "*",
     "jsonwebtoken": "^9.0.3",

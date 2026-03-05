@@ -502,8 +502,29 @@ export function renderReportHtml(data: {
 }
 
 export async function generatePdfBytesFromHtml(html: string): Promise<Buffer> {
+  if (process.env.RENDER) {
+    const puppeteer = await import("puppeteer-core");
+    const chromium = await import("@sparticuz/chromium");
+    const chromiumMod = chromium.default ?? chromium;
+    const executablePath = await (chromiumMod as { executablePath: () => Promise<string> }).executablePath();
+    const args = (chromiumMod as { args?: string[] }).args ?? ["--no-sandbox", "--disable-setuid-sandbox"];
+    const browser = await puppeteer.launch({ args, executablePath, headless: true });
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: "networkidle0", timeout: 30000 });
+      const pdfBytes = await page.pdf({
+        format: "letter",
+        landscape: true,
+        margin: { top: "0.5in", right: "0.5in", bottom: "0.5in", left: "0.5in" },
+        printBackground: true,
+      });
+      return Buffer.from(pdfBytes);
+    } finally {
+      await browser.close();
+    }
+  }
   const puppeteer = await import("puppeteer");
-  const browser = await puppeteer.launch({
+  const browser = await puppeteer.default.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
