@@ -518,28 +518,59 @@ export function renderReportHtml(data: {
 </html>`;
 }
 
+const PDF_OPTIONS = {
+  format: "letter" as const,
+  landscape: true,
+  margin: { top: "0.5in", right: "0.5in", bottom: "0.5in", left: "0.5in" },
+  printBackground: true,
+};
+
+/** Use load instead of networkidle0 so inline/data-URL-only HTML doesn't hang in headless. */
+const SET_CONTENT_OPTIONS = { waitUntil: "load" as const, timeout: 30000 };
+
 export async function generatePdfBytesFromHtml(html: string): Promise<Buffer> {
-  if (process.env.RENDER) {
-    const puppeteer = await import("puppeteer-core");
-    const chromium = await import("@sparticuz/chromium");
-    const chromiumMod = chromium.default ?? chromium;
-    const executablePath = await (chromiumMod as { executablePath: () => Promise<string> }).executablePath();
-    const args = (chromiumMod as { args?: string[] }).args ?? ["--no-sandbox", "--disable-setuid-sandbox"];
-    const browser = await puppeteer.launch({ args, executablePath, headless: true });
+  const useServerlessChromium =
+    process.env.RENDER === "true" || process.env.NODE_ENV === "production";
+
+  if (useServerlessChromium) {
     try {
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: "networkidle0", timeout: 30000 });
-      const pdfBytes = await page.pdf({
-        format: "letter",
-        landscape: true,
-        margin: { top: "0.5in", right: "0.5in", bottom: "0.5in", left: "0.5in" },
-        printBackground: true,
+      const puppeteer = await import("puppeteer-core");
+      const chromium = await import("@sparticuz/chromium");
+      const chromiumMod = chromium.default ?? chromium;
+      const execPathFn = (chromiumMod as { executablePath: () => Promise<string> }).executablePath;
+      const executablePath = execPathFn ? await execPathFn() : undefined;
+      const args =
+        (chromiumMod as { args?: string[] }).args ?? [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+        ];
+      const browser = await puppeteer.launch({
+        args,
+        executablePath,
+        headless: true,
       });
-      return Buffer.from(pdfBytes);
-    } finally {
-      await browser.close();
+      try {
+        const page = await browser.newPage();
+        await page.setContent(html, SET_CONTENT_OPTIONS);
+        const pdfBytes = await page.pdf(PDF_OPTIONS);
+        return Buffer.from(pdfBytes);
+      } finally {
+        await browser.close();
+      }
+    } catch (serverlessErr) {
+      if (process.env.NODE_ENV === "production") {
+        // eslint-disable-next-line no-console
+        console.error(
+          "Serverless Chromium failed, report generation aborted:",
+          serverlessErr instanceof Error ? serverlessErr.message : String(serverlessErr)
+        );
+      }
+      throw serverlessErr;
     }
   }
+
   const puppeteer = await import("puppeteer");
   const browser = await puppeteer.default.launch({
     headless: true,
@@ -547,13 +578,8 @@ export async function generatePdfBytesFromHtml(html: string): Promise<Buffer> {
   });
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0", timeout: 30000 });
-    const pdfBytes = await page.pdf({
-      format: "letter",
-      landscape: true,
-      margin: { top: "0.5in", right: "0.5in", bottom: "0.5in", left: "0.5in" },
-      printBackground: true,
-    });
+    await page.setContent(html, SET_CONTENT_OPTIONS);
+    const pdfBytes = await page.pdf(PDF_OPTIONS);
     return Buffer.from(pdfBytes);
   } finally {
     await browser.close();

@@ -702,9 +702,12 @@ inspectionsRouter.post(
         publicUrl: downloadUrl,
       });
     } catch (err) {
-      if (process.env.NODE_ENV !== "production") {
+      // Always log so Render (and other hosts) show the real cause of 500 in logs
+      // eslint-disable-next-line no-console
+      console.error("Report generation failed:", err instanceof Error ? err.message : String(err));
+      if (process.env.NODE_ENV !== "production" && err instanceof Error) {
         // eslint-disable-next-line no-console
-        console.error(err);
+        console.error(err.stack);
       }
       res.status(500).json({ error: "Failed to generate report." });
     }
