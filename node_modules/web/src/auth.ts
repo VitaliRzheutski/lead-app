@@ -21,3 +21,16 @@ export function clearToken(): void {
   window.localStorage.removeItem(TOKEN_KEY);
 }
 
+/** Decode JWT payload and return email if present. */
+export function getEmailFromToken(token: string | null): string | null {
+  if (!token || typeof token !== "string") return null;
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return null;
+    const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof decoded?.email === "string" ? decoded.email : null;
+  } catch {
+    return null;
+  }
+}
+

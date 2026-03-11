@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { clearToken } from "../auth";
+import { clearToken, getEmailFromToken } from "../auth";
 import { API_URL } from "../config";
 import { formatDate } from "../utils/date";
 
@@ -47,6 +47,7 @@ type DashboardStats = {
 
 export function DashboardPage({ token, onLogout }: Props) {
   const navigate = useNavigate();
+  const email = getEmailFromToken(token);
   const [data, setData] = useState<BuildingsResponse | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -278,10 +279,13 @@ export function DashboardPage({ token, onLogout }: Props) {
 
   return (
     <main className="min-h-screen flex flex-col bg-slate-950">
-      <header className="w-full border-b border-slate-800 bg-slate-900/80 backdrop-blur px-4 py-3 flex items-center justify-between">
-        <h1 className="text-base font-semibold text-slate-50">
-          Lead App Dashboard
-        </h1>
+      <header className="w-full border-b border-slate-800 bg-slate-900/80 backdrop-blur px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-col gap-0.5">
+          <h1 className="text-base font-semibold text-slate-50">Lead App Dashboard</h1>
+          {email && (
+            <p className="text-xs text-slate-400">Lead Inspector: <span className="text-slate-300">{email}</span></p>
+          )}
+        </div>
         <button
           type="button"
           onClick={handleLogout}
