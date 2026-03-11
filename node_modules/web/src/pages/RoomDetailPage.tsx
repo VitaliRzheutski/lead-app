@@ -345,6 +345,11 @@ function SurfaceCard({
           </button>
         </span>
       </div>
+      {surface.notes && surface.notes.trim() && (
+        <p className="mt-2 text-xs text-slate-400 italic border-l-2 border-slate-700 pl-2 break-words whitespace-pre-wrap">
+          {surface.notes}
+        </p>
+      )}
     </div>
   );
 }
