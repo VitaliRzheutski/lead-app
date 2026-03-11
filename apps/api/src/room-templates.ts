@@ -159,8 +159,8 @@ const FIRST_FLOOR_HALLWAY_STAIRWELL: { room_side: string; room_equivalent: strin
   floorTile("Floor"),
   radiator("Radiator"),
   door("Door Panel"), door("Door Jamb"), door("Door Casing"),
-  stairs("Stairwell Handrail"), stairs("Stairwell Step / Tread"), stairs("Stairwell Stringer"),
-  stairs("Balusters"), stairs("Stairwell Step Riser"), stairs("Banister of Stairs"),
+  stairs("Handrail"), stairs("Stairwell Stringer (Side)"), stairs("Balusters (spindles)"),
+  stairs("Stairwell Step / Tread"), stairs("Stairwell Step Riser"), stairs("Banister of Stairs"),
 ];
 
 const CLOSET: { room_side: string; room_equivalent: string; component: string; substrate: string }[] = [

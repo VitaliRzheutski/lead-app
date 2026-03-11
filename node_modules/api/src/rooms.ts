@@ -131,9 +131,18 @@ roomsRouter.get(
            (SELECT file_url FROM photos WHERE photos.surface_id = s.id ORDER BY created_at ASC LIMIT 1) AS first_photo_url
          FROM surfaces s
          WHERE s.room_id = $1
-         ORDER BY
-           CASE s.room_equivalent
-             WHEN 'Closet Door Panel' THEN 50
+        ORDER BY
+          CASE s.room_equivalent
+            WHEN 'Handrail' THEN 70
+            WHEN 'Stairwell Handrail' THEN 70
+            WHEN 'Stairwell Stringer (Side)' THEN 71
+            WHEN 'Stairwell Stringer' THEN 71
+            WHEN 'Balusters (spindles)' THEN 72
+            WHEN 'Balusters' THEN 72
+            WHEN 'Stairwell Step / Tread' THEN 73
+            WHEN 'Stairwell Step Riser' THEN 74
+            WHEN 'Banister of Stairs' THEN 75
+            WHEN 'Closet Door Panel' THEN 50
              WHEN 'Closet Door Jamb' THEN 51
              WHEN 'Closet Door Casing' THEN 52
              WHEN 'Closet Shelf' THEN 53
