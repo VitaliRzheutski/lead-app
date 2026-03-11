@@ -95,8 +95,13 @@ Deploy the Lead app (API + Web) on Render's free tier.
 |-----|-------|
 | `VITE_API_URL` | `https://lead-app-api.onrender.com` *(your API URL from Part 2)* |
 
-5. Create Static Site
-6. Copy the site URL (e.g. `https://lead-app-web.onrender.com`)
+5. **Redirects/Rewrites** — add SPA fallback so refresh on `/inspections/123` etc. works:
+   - Source: `/*`  
+   - Destination: `/index.html`  
+   - Action: **Rewrite**
+
+6. Create Static Site
+7. Copy the site URL (e.g. `https://lead-app-web.onrender.com`)
 
 ---
 

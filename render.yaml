@@ -1,0 +1,14 @@
+# Add the static site to a Render Blueprint, then sync.
+# Or add this rewrite manually: Dashboard → your static site → Redirects/Rewrites
+# Source: /*  Destination: /index.html  Action: Rewrite
+
+services:
+  - type: web
+    runtime: static
+    name: lead-app-web
+    buildCommand: npm install && npm run build:web
+    staticPublishPath: apps/web/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
