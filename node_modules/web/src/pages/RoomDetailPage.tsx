@@ -384,6 +384,64 @@ export function RoomDetailPage({ token }: Props) {
   const [roomEquivalent, setRoomEquivalent] = useState("");
   const [notes, setNotes] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isAddingCloset, setIsAddingCloset] = useState(false);
+
+  const CLOSET_SURFACES = [
+    { room_equivalent: "Closet Door Panel", component: "Door", substrate: "Wood" },
+    { room_equivalent: "Closet Door Casing", component: "Door", substrate: "Wood" },
+    { room_equivalent: "Closet Door Jamb", component: "Door", substrate: "Wood" },
+    { room_equivalent: "Closet Shelf", component: "Closet Shelf", substrate: "Wood" },
+    { room_equivalent: "Closet Shelf Support", component: "Closet Shelf Support", substrate: "Wood" },
+    { room_equivalent: "Inside Closet", component: "Closet", substrate: "Wood" },
+  ] as const;
+
+  function nextClosetName(base: string): string {
+    const escaped = base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(`^${escaped}(?: (\\d+))?$`);
+    const used = new Set<number>();
+    for (const s of surfaces) {
+      const m = s.room_equivalent.match(re);
+      if (m) used.add(m[1] ? parseInt(m[1], 10) : 0);
+    }
+    let next = 0;
+    while (used.has(next)) next++;
+    return next === 0 ? base : `${base} ${next}`;
+  }
+
+  async function handleAddClosetSurfaces() {
+    if (!roomId || isAddingCloset) return;
+    setFormError(null);
+    setIsAddingCloset(true);
+    try {
+      for (const { room_equivalent: base, component: comp, substrate: subst } of CLOSET_SURFACES) {
+        const roomEquivalent = nextClosetName(base);
+        const response = await fetch(`${API_URL}/rooms/${roomId}/surfaces`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            room_side: "N/A",
+            room_equivalent: roomEquivalent,
+            component: comp,
+            substrate: subst,
+            xrf_reading: 0,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          setFormError(data?.error ?? "Failed to add closet surfaces.");
+          return;
+        }
+        setSurfaces((prev) => [...prev, data.surface]);
+      }
+    } catch (_err) {
+      setFormError("Unable to reach the server.");
+    } finally {
+      setIsAddingCloset(false);
+    }
+  }
 
   useEffect(() => {
     if (!roomId) {
@@ -714,15 +772,25 @@ export function RoomDetailPage({ token }: Props) {
                 </button>
               ) : (
                 <div className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-sm font-semibold text-slate-100">Add surface</h3>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddForm(false)}
-                      className="text-slate-400 hover:text-slate-200 text-sm py-1 px-2 -mr-2 touch-manipulation"
-                    >
-                      −
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleAddClosetSurfaces}
+                        disabled={isAddingCloset}
+                        className="rounded-full px-3 py-1.5 text-xs font-medium bg-slate-700 text-slate-200 hover:bg-slate-600 disabled:opacity-60 touch-manipulation"
+                      >
+                        {isAddingCloset ? "Adding…" : "Add Closet Surfaces"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddForm(false)}
+                        className="text-slate-400 hover:text-slate-200 text-sm py-1 px-2 -mr-2 touch-manipulation"
+                      >
+                        −
+                      </button>
+                    </div>
                   </div>
                   {formError && (
                     <p className="text-xs text-red-400 bg-red-950/40 border border-red-900 rounded px-2 py-1.5">
