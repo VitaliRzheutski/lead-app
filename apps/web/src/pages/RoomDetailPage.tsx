@@ -385,6 +385,7 @@ export function RoomDetailPage({ token }: Props) {
   const [notes, setNotes] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [isAddingCloset, setIsAddingCloset] = useState(false);
+  const [isAddingWindow, setIsAddingWindow] = useState(false);
 
   const CLOSET_SURFACES = [
     { room_equivalent: "Closet Door Panel", component: "Door", substrate: "Wood" },
@@ -440,6 +441,47 @@ export function RoomDetailPage({ token }: Props) {
       setFormError("Unable to reach the server.");
     } finally {
       setIsAddingCloset(false);
+    }
+  }
+
+  const WINDOW_SURFACES = [
+    { room_equivalent: "Bedroom Window Sill", component: "Window", substrate: "Wood" },
+    { room_equivalent: "Window Side Casing", component: "Window", substrate: "Wood" },
+    { room_equivalent: "Bedroom Window Sash (Mid)", component: "Window", substrate: "Wood" },
+  ] as const;
+
+  async function handleAddWindowSurfaces() {
+    if (!roomId || isAddingWindow) return;
+    setFormError(null);
+    setIsAddingWindow(true);
+    try {
+      for (const { room_equivalent: base, component: comp, substrate: subst } of WINDOW_SURFACES) {
+        const roomEquivalent = nextClosetName(base);
+        const response = await fetch(`${API_URL}/rooms/${roomId}/surfaces`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            room_side: "N/A",
+            room_equivalent: roomEquivalent,
+            component: comp,
+            substrate: subst,
+            xrf_reading: 0,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          setFormError(data?.error ?? "Failed to add window surfaces.");
+          return;
+        }
+        setSurfaces((prev) => [...prev, data.surface]);
+      }
+    } catch (_err) {
+      setFormError("Unable to reach the server.");
+    } finally {
+      setIsAddingWindow(false);
     }
   }
 
@@ -778,10 +820,18 @@ export function RoomDetailPage({ token }: Props) {
                       <button
                         type="button"
                         onClick={handleAddClosetSurfaces}
-                        disabled={isAddingCloset}
+                        disabled={isAddingCloset || isAddingWindow}
                         className="rounded-full px-3 py-1.5 text-xs font-medium bg-slate-700 text-slate-200 hover:bg-slate-600 disabled:opacity-60 touch-manipulation"
                       >
                         {isAddingCloset ? "Adding…" : "Add Closet Surfaces"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAddWindowSurfaces}
+                        disabled={isAddingCloset || isAddingWindow}
+                        className="rounded-full px-3 py-1.5 text-xs font-medium bg-slate-700 text-slate-200 hover:bg-slate-600 disabled:opacity-60 touch-manipulation"
+                      >
+                        {isAddingWindow ? "Adding…" : "Add Window Surfaces"}
                       </button>
                       <button
                         type="button"
