@@ -386,6 +386,8 @@ export function RoomDetailPage({ token }: Props) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isAddingCloset, setIsAddingCloset] = useState(false);
   const [isAddingWindow, setIsAddingWindow] = useState(false);
+  const [isAddingDoor, setIsAddingDoor] = useState(false);
+  const [isAddingStairs, setIsAddingStairs] = useState(false);
 
   const CLOSET_SURFACES = [
     { room_equivalent: "Closet Door Panel", component: "Door", substrate: "Wood" },
@@ -482,6 +484,91 @@ export function RoomDetailPage({ token }: Props) {
       setFormError("Unable to reach the server.");
     } finally {
       setIsAddingWindow(false);
+    }
+  }
+
+  const DOOR_SURFACES = [
+    { room_equivalent: "Door Casing", component: "Door", substrate: "Wood" },
+    { room_equivalent: "Door Jamb", component: "Door", substrate: "Wood" },
+    { room_equivalent: "Door Panel", component: "Door", substrate: "Wood" },
+  ] as const;
+
+  async function handleAddDoorSurfaces() {
+    if (!roomId || isAddingDoor) return;
+    setFormError(null);
+    setIsAddingDoor(true);
+    try {
+      for (const { room_equivalent: base, component: comp, substrate: subst } of DOOR_SURFACES) {
+        const roomEquivalent = nextClosetName(base);
+        const response = await fetch(`${API_URL}/rooms/${roomId}/surfaces`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            room_side: "N/A",
+            room_equivalent: roomEquivalent,
+            component: comp,
+            substrate: subst,
+            xrf_reading: 0,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          setFormError(data?.error ?? "Failed to add door surfaces.");
+          return;
+        }
+        setSurfaces((prev) => [...prev, data.surface]);
+      }
+    } catch (_err) {
+      setFormError("Unable to reach the server.");
+    } finally {
+      setIsAddingDoor(false);
+    }
+  }
+
+  const STAIRS_SURFACES = [
+    { room_equivalent: "Handrail", component: "Stairs", substrate: "Wood" },
+    { room_equivalent: "Stairwell Stringer (Side)", component: "Stairs", substrate: "Wood" },
+    { room_equivalent: "Balusters (spindles)", component: "Stairs", substrate: "Wood" },
+    { room_equivalent: "Stairwell Step / Tread", component: "Stairs", substrate: "Wood" },
+    { room_equivalent: "Stairwell Step Riser", component: "Stairs", substrate: "Wood" },
+    { room_equivalent: "Banister of Stairs", component: "Stairs", substrate: "Wood" },
+  ] as const;
+
+  async function handleAddStairsSurfaces() {
+    if (!roomId || isAddingStairs) return;
+    setFormError(null);
+    setIsAddingStairs(true);
+    try {
+      for (const { room_equivalent: base, component: comp, substrate: subst } of STAIRS_SURFACES) {
+        const roomEquivalent = nextClosetName(base);
+        const response = await fetch(`${API_URL}/rooms/${roomId}/surfaces`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            room_side: "N/A",
+            room_equivalent: roomEquivalent,
+            component: comp,
+            substrate: subst,
+            xrf_reading: 0,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          setFormError(data?.error ?? "Failed to add stairs surfaces.");
+          return;
+        }
+        setSurfaces((prev) => [...prev, data.surface]);
+      }
+    } catch (_err) {
+      setFormError("Unable to reach the server.");
+    } finally {
+      setIsAddingStairs(false);
     }
   }
 
@@ -820,7 +907,7 @@ export function RoomDetailPage({ token }: Props) {
                       <button
                         type="button"
                         onClick={handleAddClosetSurfaces}
-                        disabled={isAddingCloset || isAddingWindow}
+                        disabled={isAddingCloset || isAddingWindow || isAddingDoor || isAddingStairs}
                         className="rounded-full px-3 py-1.5 text-xs font-medium bg-slate-700 text-slate-200 hover:bg-slate-600 disabled:opacity-60 touch-manipulation"
                       >
                         {isAddingCloset ? "Adding…" : "Add Closet Surfaces"}
@@ -828,10 +915,26 @@ export function RoomDetailPage({ token }: Props) {
                       <button
                         type="button"
                         onClick={handleAddWindowSurfaces}
-                        disabled={isAddingCloset || isAddingWindow}
+                        disabled={isAddingCloset || isAddingWindow || isAddingDoor || isAddingStairs}
                         className="rounded-full px-3 py-1.5 text-xs font-medium bg-slate-700 text-slate-200 hover:bg-slate-600 disabled:opacity-60 touch-manipulation"
                       >
                         {isAddingWindow ? "Adding…" : "Add Window Surfaces"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAddDoorSurfaces}
+                        disabled={isAddingCloset || isAddingWindow || isAddingDoor || isAddingStairs}
+                        className="rounded-full px-3 py-1.5 text-xs font-medium bg-slate-700 text-slate-200 hover:bg-slate-600 disabled:opacity-60 touch-manipulation"
+                      >
+                        {isAddingDoor ? "Adding…" : "Add Door Surfaces"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAddStairsSurfaces}
+                        disabled={isAddingCloset || isAddingWindow || isAddingDoor || isAddingStairs}
+                        className="rounded-full px-3 py-1.5 text-xs font-medium bg-slate-700 text-slate-200 hover:bg-slate-600 disabled:opacity-60 touch-manipulation"
+                      >
+                        {isAddingStairs ? "Adding…" : "Add Stairs Surfaces"}
                       </button>
                       <button
                         type="button"
